@@ -52,6 +52,18 @@ def crop_image(img_name):
     return crop_img
 
 
+# Функция, котороя
+def get_digitization_image(img):
+    img_list = np.where(img > 0, 1, 0)
+    for i in img_list:
+        for j in i:
+            print(j)
+            if j == 1:
+                print(123)
+
+
+
+
 # Функция, которая размечает на ч/б изображении пиковые точки и возвращает их координаты
 def marking_image(w_b_image):
     # TODO сделать реализацию отметки точек
@@ -62,3 +74,4 @@ def marking_image(w_b_image):
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
+get_digitization_image(Otsus_method('ECG-1'))
