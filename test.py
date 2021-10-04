@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 
+
 # Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
 # Есть минус - она не универсальна и вряд ли заработает для других изображений
 def delete_background(img_name):
@@ -10,14 +11,16 @@ def delete_background(img_name):
     img = cv.imread(f'images/{img_name}.jpeg')  # Чтение изображения
     cv.imshow('Original', img)  # Показывает изображение
 
-    img_in_HSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Перевод изображения из цветовой палитры RGB (порядок изнальчно изменён, BGR) в палитру HSV
-    img_with_HSV_filter = cv.inRange(img_in_HSV, hsv_min, hsv_max) # Применяет к изобрежнию фильтр
+    img_in_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Перевод изображения из цветовой палитры RGB (порядок изнальчно
+    # изменён, BGR) в палитру HSV
+    img_with_hsv_filter = cv.inRange(img_in_hsv, hsv_min, hsv_max) # Применяет к изобрежнию фильтр
 
-    cv.imshow('Filtered', img_with_HSV_filter)  # Показывает обработанное изображение
-    cv.imwrite(f'images/{img_name}_w-b.jpeg', img_with_HSV_filter)  # Сохраняет новое изображение
+    cv.imshow('Filtered', img_with_hsv_filter)  # Показывает обработанное изображение
+    cv.imwrite(f'images/{img_name}_w-b.jpeg', img_with_hsv_filter)  # Сохраняет новое изображение
     cv.waitKey(0)
     
-    return img_with_HSV_filter
+    return img_with_hsv_filter
+
 
 # Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
 def Otsus_method(img_name):
@@ -34,7 +37,9 @@ def Otsus_method(img_name):
 
     return img_with_filter
 
-# Функция, которая обрезает изображение сверху и снизу на 1 пиксель (была нужна, потому что исходное изображение ECG-1 сверху и снизу имело чёрную маленькую рамку)
+
+# Функция, которая обрезает изображение сверху и снизу на 1 пиксель (была нужна, потому что исходное изображение ECG-1
+# сверху и снизу имело чёрную маленькую рамку)
 def crop_image(img_name): 
     img = cv.imread(f'images/{img_name}.jpeg')
     y0 = 1
@@ -45,6 +50,7 @@ def crop_image(img_name):
     cv.waitKey(0)
 
     return crop_img
+
 
 # Функция, которая размечает на ч/б изображении пиковые точки и возвращает их координаты
 def marking_image(w_b_image):
