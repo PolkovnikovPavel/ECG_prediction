@@ -1,61 +1,64 @@
-import cv2
+import cv2 as cv
 import numpy as np
 
 
-def nothing(*arg):
+# Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
+# Есть минус - она не универсальна и вряд ли заработает для других изображений
+def delete_background(img_name):
+    hsv_min = np.array((0, 0, 0), np.uint8)  # Минимальный порог цвета
+    hsv_max = np.array((240, 255, 120), np.uint8)  # Максимальный порог цвета
+
+    img = cv.imread(f'images/{img_name}.jpeg')  # Чтение изображения
+    cv.imshow('Original', img)  # Показывает изображение
+
+    img_in_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Перевод изображения из цветовой палитры RGB (порядок изнальчно
+    # изменён, BGR) в палитру HSV
+    img_with_hsv_filter = cv.inRange(img_in_hsv, hsv_min, hsv_max) # Применяет к изобрежнию фильтр
+
+    cv.imshow('Filtered', img_with_hsv_filter)  # Показывает обработанное изображение
+    cv.imwrite(f'images/{img_name}_w-b.jpeg', img_with_hsv_filter)  # Сохраняет новое изображение
+    cv.waitKey(0)
+
+    return img_with_hsv_filter
+
+
+# Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
+def Otsus_method(img_name):
+    img = cv.imread(f'images/{img_name}.jpeg')  # Чтение изображения
+    cv.imshow("Original", img)  # Показ изображения
+
+    gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)  # Преобразование исходного изображения в ч/б
+    blur_img = cv.GaussianBlur(gray_img, (3, 3), 0)  # Размытие изображения для удаления клеточек
+
+    (T, img_with_filter) = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)  # Применение фильтра
+    cv.imshow("Filtered", img_with_filter)  # Показ изображения
+    cv.imwrite(f'images/{img_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
+    cv.waitKey(0)
+
+    return img_with_filter
+
+
+# Функция, которая обрезает изображение сверху и снизу на 1 пиксель (была нужна, потому что исходное изображение ECG-1
+# сверху и снизу имело чёрную маленькую рамку)
+def crop_image(img_name):
+    img = cv.imread(f'images/{img_name}.jpeg')
+    y0 = 1
+    y1 = img.shape[0]-1
+    crop_img = img[y0:y1]
+    cv.imshow('cropped', crop_img)
+    cv.imwrite(f'images/{img_name}.jpeg', crop_img)
+    cv.waitKey(0)
+
+    return crop_img
+
+
+# Функция, которая размечает на ч/б изображении пиковые точки и возвращает их координаты
+def marking_image(w_b_image):
+    # TODO сделать реализацию отметки точек
     pass
 
 
-cv2.namedWindow("thresh")  # создаем главное окно
-cv2.namedWindow("settings")  # создаем окно настроек
-
-# создаем 6 бегунков для настройки начального и конечного цвета фильтра
-cv2.createTrackbar('r1', 'settings', 150, 255, nothing)
-cv2.createTrackbar('g1', 'settings', 150, 255, nothing)
-cv2.createTrackbar('b1', 'settings', 150, 255, nothing)
-cv2.createTrackbar('r2', 'settings', 255, 255, nothing)
-cv2.createTrackbar('g2', 'settings', 255, 255, nothing)
-cv2.createTrackbar('b2', 'settings', 255, 255, nothing)
-
-
-# Read image
-img = cv2.imread('images/ECG-2.jpeg')
-hh, ww = img.shape[:2]
-
-
-while True:
-    # считываем значения бегунков
-    r1 = cv2.getTrackbarPos('r1', 'settings')
-    g1 = cv2.getTrackbarPos('g1', 'settings')
-    b1 = cv2.getTrackbarPos('b1', 'settings')
-    r2 = cv2.getTrackbarPos('r2', 'settings')
-    g2 = cv2.getTrackbarPos('g2', 'settings')
-    b2 = cv2.getTrackbarPos('b2', 'settings')
-
-    # threshold on white
-    # Define lower and uppper limits
-    lower = np.array([r1, g1, b1])
-    upper = np.array([r2, g2, b2])
-
-    # Create mask to only select black
-    thresh = cv2.inRange(img, lower, upper)
-
-    # apply morphology
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20))
-    morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-
-    # invert morp image
-    mask = 255 - morph
-
-    # apply mask to image
-    result = cv2.bitwise_and(img, img, mask=mask)
-
-    cv2.imshow('thresh', thresh)
-    ch = cv2.waitKey(5)
-    if ch == 27:
-        break
-
-
-cv2.imwrite('result.jpg', thresh)
-cv2.destroyAllWindows()
-
+# Вызовы функций
+# crop_image('ECG-1')
+# delete_background('ECG-1')
+# Otsus_method('ECG-1')
