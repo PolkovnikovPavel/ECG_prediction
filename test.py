@@ -55,11 +55,47 @@ def crop_image(img_name):
 # Функция, котороя
 def get_digitization_image(img):
     img_list = np.where(img > 0, 1, 0)
-    for i in img_list:
-        for j in i:
-            print(j)
-            if j == 1:
-                print(123)
+    return img_list
+
+
+def find_extremes(array):
+    last_points = []
+    ia_upper = True   # показатель, того, куда двигается прямая (вверх или вниз)
+    for x in range(array.shape[1]):
+        if ia_upper:   # если прямая возврастает, то надо искать верхнию точку сверху, иначе наоборат снизу
+            start_y = 0   # то с какого пиксиля надо начанать считывение
+            end_y = array.shape[0]
+            step = 1
+        else:
+            start_y = array.shape[0] - 1  # то с какого пиксиля надо начанать считывение
+            end_y = 0
+            step = -1
+        for y in range(start_y, end_y, step):
+            if array[y, x] == 1:
+                if len(last_points) == 0:
+                    last_points.append((x, y))
+                    break
+                if ia_upper:
+                    if y > last_points[-1][1]:
+                        ia_upper = not ia_upper
+                        last_points.append((x, y))
+                        break
+                else:
+                    if y < last_points[-1][1]:
+                        ia_upper = not ia_upper
+                        last_points.append((x, y))
+                        break
+
+    img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)
+
+    last = last_points[0]
+    for point in last_points:
+        cv.line(img, last, point, (255, 255, 255), 3)
+        last = point
+    cv.imshow("Image", img)
+    cv.waitKey(0)
+
+    return last_points
 
 
 
@@ -74,4 +110,4 @@ def marking_image(w_b_image):
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
-get_digitization_image(Otsus_method('ECG-1'))
+find_extremes(get_digitization_image(Otsus_method('ECG-1')))
