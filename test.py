@@ -114,7 +114,7 @@ def find_extremes_and_points(array, is_show=True):
             if point[2] == 1:
                 cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
             elif point[2] == 2:
-                cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
+                cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
             last = point[:-1]
         cv.imshow("Image", img)
         cv.imwrite(f'result.jpeg', img)
@@ -124,29 +124,47 @@ def find_extremes_and_points(array, is_show=True):
 
 
 
-def extrema_analysis(all_extremes):
+def extrema_analysis(all_extremes, is_show=True, img_name='ECG-1'):
     average_length = 0
+    average_y = 0
+    max_y = 10000
     for i in range(1, len(all_extremes)):
         x1, y1, id1 = all_extremes[i]
         x2, y2, id2 = all_extremes[i - 1]
         average_length += ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
-    average_length = average_length / len(all_extremes) - 1
+        average_y += y2
+        if y2 < max_y:
+            max_y = y2
+    average_length = average_length / (len(all_extremes) - 1)
+    average_y = average_y / (len(all_extremes) - 1)
     print(average_length)
 
     r_points = []
+    minimum_boundary = average_y - (average_y - max_y) / 3
     for i in range(1, len(all_extremes)):
         x1, y1, id1 = all_extremes[i]
         x2, y2, id2 = all_extremes[i - 1]
         length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
-        if length > average_length * 1.4:
+        if length > average_length * 1.5 and y2 < minimum_boundary:
             r_points.append((x2, y2))
+
+    if is_show:   # просто отображение результата (не обязательно)
+        img = cv.imread(f'result.jpeg')
+        cv.line(img, (0, int(minimum_boundary)), (np.size(img, 1), int(minimum_boundary)), (255, 0, 255), 1)
+        for point in r_points:
+            point = point[:2]
+            cv.circle(img, point, 5, (255, 0, 255), -1)
+        cv.imshow("Image", img)
+        cv.waitKey(0)
+
 
 
 # Вызовы функций
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
-all_points = find_extremes_and_points(get_digitization_image(Otsus_method('ECG-3')))
+img_name = 'ECG-1'
+all_points = find_extremes_and_points(get_digitization_image(Otsus_method(img_name)))
 
 all_extremes = list(filter(lambda x: x[2] == 1, all_points))
-extrema_analysis(all_extremes)
+extrema_analysis(all_extremes, img_name=img_name)
