@@ -59,7 +59,7 @@ def get_digitization_image(img):
     return img_list
 
 
-def find_extremes_and_points(array):
+def find_extremes_and_points(array, is_show=True):
     last_points = []   # результат (х, у, id)
     # id:
     # 1) точка экстремума
@@ -98,7 +98,7 @@ def find_extremes_and_points(array):
                 is_upper = not is_upper   # указывает, что кривая начала возврастать
                 last_angel = angel   # запаминает, под каким углом шла кривая
 
-        if abs(last_angel - angel) > math.pi / 6:   # кривая уже более чем на 30 грпдусов повернулсь, то запоминает её
+        if abs(last_angel - angel) > math.pi / 6:   # кривая повернулсь уже более чем на 30 грпдусов, то запоминает её
             last_points.append((x, average_y, 2))
             last_angel = angel
 
@@ -106,20 +106,19 @@ def find_extremes_and_points(array):
 
     last_points.append((array.shape[1], average_y, 2))   # сохраняет последний столбец, чтоб не было обрыва
 
-
-
-    img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
-    last = last_points[0][:-1]
-    for point in last_points:
-        cv.line(img, last, point[:-1], (255, 255, 255), 1)
-        if point[2] == 1:
-            cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
-        elif point[2] == 2:
-            cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
-        last = point[:-1]
-    cv.imshow("Image", img)
-    cv.imwrite(f'result.jpeg', img)
-    cv.waitKey(0)
+    if is_show:
+        img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
+        last = last_points[0][:-1]
+        for point in last_points:
+            cv.line(img, last, point[:-1], (255, 255, 255), 1)
+            if point[2] == 1:
+                cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
+            elif point[2] == 2:
+                cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
+            last = point[:-1]
+        cv.imshow("Image", img)
+        cv.imwrite(f'result.jpeg', img)
+        cv.waitKey(0)
 
     return last_points
 
@@ -141,26 +140,6 @@ def extrema_analysis(all_extremes):
         length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
         if length > average_length * 1.4:
             r_points.append((x2, y2))
-
-    img = np.zeros((901, 217, 3), np.uint8)  # просто отображение результата (не обязательно)
-    last = last_points[0][:-1]
-    for point in last_points:
-        cv.line(img, last, point[:-1], (255, 255, 255), 1)
-        if point[2] == 1:
-            cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
-        elif point[2] == 2:
-            cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
-        last = point[:-1]
-    cv.imshow("Image", img)
-    cv.imwrite(f'result.jpeg', img)
-    cv.waitKey(0)
-
-
-
-# Функция, которая размечает на ч/б изображении пиковые точки и возвращает их координаты
-def marking_image(w_b_image):
-    # TODO сделать реализацию отметки точек
-    pass
 
 
 # Вызовы функций
