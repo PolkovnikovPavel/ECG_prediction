@@ -1,6 +1,8 @@
 import cv2 as cv
 import numpy as np
 import math
+import re
+import os
 
 
 # Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
@@ -38,14 +40,21 @@ def get_digitization_image(img):
     img_list = np.where(img > 0, 1, 0)
     return img_list
 
-
+# Процедура, которая переводит выбранный файл в формат .jpeg и удаляет исходный
+def convert_to_jpeg(img_full_name):
+    img = cv.imread(f'images/{img_full_name}')
+    img_name = re.split(r'\.', img_full_name)[0]
+    cv.imwrite(f'images/{img_name}.jpeg', img)
+    os.remove(f'images/{img_full_name}')
+    
+# Функция, которая ищет экстремумы на графике и может их затем продемонстрировать
 def find_extremes_and_points(array, is_show=True):
     last_points = []   # результат (х, у, id)
     # id:
     # 1) точка экстремума
     # 2) просто точка
     is_upper = True   # показатель, того, куда двигается прямая (вверх или вниз)
-    last_angel = 0   # угол для предыдущего столбца (который был добавлен в список)
+    last_angle = 0   # угол для предыдущего столбца (который был добавлен в список)
     last_average_y = (0, [0])   # это данные о предыдущем столбце (для вычислений)
     for x in range(array.shape[1]):
         all_y = []   # тут записанны все y, которые есть в столбце
@@ -59,28 +68,28 @@ def find_extremes_and_points(array, is_show=True):
             average_y = sum(all_y) // len(all_y)   # вычисляет средний У
         height = last_average_y[0] - average_y   # это высота между предыдущей точкои и текущей (вертикальный катет)
         size = (height ** 2 + 1) ** 0.5   # гипотенуза треугольника
-        angel = math.asin(height / size)   # угол под, которым движется кривай в текущей точке
+        angle = math.asin(height / size)   # угол под, которым движется кривай в текущей точке
 
         if len(last_points) == 0:   # нужно для самого первого столбца (делает корректные значения в самом начале)
             last_points.append((x, average_y, 2))
-            last_angel = angel
+            last_angle = angle
             last_average_y = (average_y, all_y)
             continue
 
         if is_upper:   # если кривая возврастает
-            if angel < 0:   # если у неё угол стал убывающим, тоесть точка экстремума
+            if angle < 0:   # если у неё угол стал убывающим, тоесть точка экстремума
                 last_points.append((x - 1, last_average_y[1][0], 1))   # добавляет точку (самую верхнюю) для результата
                 is_upper = not is_upper   # указывает, что кривая начала убывать
-                last_angel = angel   # запаминает, под каким углом шла кривая
+                last_angle = angle   # запаминает, под каким углом шла кривая
         else:   # если кривая убывает
-            if angel > 0:   # если у неё угол стал возврастающим, тоесть точка экстремума
+            if angle > 0:   # если у неё угол стал возврастающим, тоесть точка экстремума
                 last_points.append((x - 1, last_average_y[1][-1], 1))   # добавляет точку (самую нижнюю) для результата
                 is_upper = not is_upper   # указывает, что кривая начала возврастать
-                last_angel = angel   # запаминает, под каким углом шла кривая
+                last_angle = angle   # запаминает, под каким углом шла кривая
 
-        if abs(last_angel - angel) > math.pi / 6:   # кривая повернулсь уже более чем на 30 грпдусов, то запоминает её
+        if abs(last_angle - angle) > math.pi / 6:   # кривая повернулсь уже более чем на 30 грпдусов, то запоминает её
             last_points.append((x, average_y, 2))
-            last_angel = angel
+            last_angle = angle
 
         last_average_y = (average_y, all_y)
 
@@ -101,4 +110,3 @@ def find_extremes_and_points(array, is_show=True):
         cv.waitKey(0)
 
     return last_points
-
