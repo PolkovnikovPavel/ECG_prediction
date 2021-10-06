@@ -86,12 +86,12 @@ def find_extremes_and_points(array):
 
         if is_upper:   # если кривая возврастает
             if angel < 0:   # если у неё угол стал убывающим, тоесть точка экстремума
-                last_points.append((x - 1, last_average_y[1][0], 1))   # добавляет точку для результата
+                last_points.append((x - 1, last_average_y[1][0], 1))   # добавляет точку (самую верхнюю) для результата
                 is_upper = not is_upper   # указывает, что кривая начала убывать
                 last_angel = angel   # запаминает, под каким углом шла кривая
         else:   # если кривая убывает
             if angel > 0:   # если у неё угол стал возврастающим, тоесть точка экстремума
-                last_points.append((x - 1, last_average_y[1][-1], 1))   # добавляет точку для результата
+                last_points.append((x - 1, last_average_y[1][-1], 1))   # добавляет точку (самую нижнюю) для результата
                 is_upper = not is_upper   # указывает, что кривая начала возврастать
                 last_angel = angel   # запаминает, под каким углом шла кривая
 
@@ -100,17 +100,18 @@ def find_extremes_and_points(array):
             last_angel = angel
 
         last_average_y = (average_y, all_y)
-        
 
-    last_points.append((array.shape[1], average_y, 2))
+    last_points.append((array.shape[1], average_y, 2))   # сохраняет последний столбец, чтоб не было обрыва
 
-    img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)
 
+
+    img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
     last = last_points[0][:-1]
     for point in last_points:
-        point = point[:-1]
-        cv.line(img, last, point, (255, 255, 255), 1)
-        last = point
+        cv.line(img, last, point[:-1], (255, 255, 255), 1)
+        if point[2] == 1:
+            cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
+        last = point[:-1]
     cv.imshow("Image", img)
     cv.waitKey(0)
 
@@ -127,4 +128,4 @@ def marking_image(w_b_image):
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
-print( find_extremes(get_digitization_image(Otsus_method('ECG-1'))) )
+print( find_extremes_and_points(get_digitization_image(Otsus_method('ECG-1'))) )
