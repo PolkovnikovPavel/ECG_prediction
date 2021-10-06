@@ -72,8 +72,11 @@ def find_extremes_and_points(array):
         for y in range(0, array.shape[0]):   # перебор всего столбца и анализ
             if array[y, x] == 1:
                 all_y.append(y)
-
-        average_y = sum(all_y) // len(all_y)   # вычисляет средний У
+        if len(all_y) == 0:
+            all_y = last_average_y[1]
+            average_y = last_average_y[0]
+        else:
+            average_y = sum(all_y) // len(all_y)   # вычисляет средний У
         height = last_average_y[0] - average_y   # это высота между предыдущей точкои и текущей (вертикальный катет)
         size = (height ** 2 + 1) ** 0.5   # гипотенуза треугольника
         angel = math.asin(height / size)   # угол под, которым движется кривай в текущей точке
@@ -111,11 +114,47 @@ def find_extremes_and_points(array):
         cv.line(img, last, point[:-1], (255, 255, 255), 1)
         if point[2] == 1:
             cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
+        elif point[2] == 2:
+            cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
         last = point[:-1]
     cv.imshow("Image", img)
+    cv.imwrite(f'result.jpeg', img)
     cv.waitKey(0)
 
     return last_points
+
+
+
+def extrema_analysis(all_extremes):
+    average_length = 0
+    for i in range(1, len(all_extremes)):
+        x1, y1, id1 = all_extremes[i]
+        x2, y2, id2 = all_extremes[i - 1]
+        average_length += ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+    average_length = average_length / len(all_extremes) - 1
+    print(average_length)
+
+    r_points = []
+    for i in range(1, len(all_extremes)):
+        x1, y1, id1 = all_extremes[i]
+        x2, y2, id2 = all_extremes[i - 1]
+        length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+        if length > average_length * 1.4:
+            r_points.append((x2, y2))
+
+    img = np.zeros((901, 217, 3), np.uint8)  # просто отображение результата (не обязательно)
+    last = last_points[0][:-1]
+    for point in last_points:
+        cv.line(img, last, point[:-1], (255, 255, 255), 1)
+        if point[2] == 1:
+            cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
+        elif point[2] == 2:
+            cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
+        last = point[:-1]
+    cv.imshow("Image", img)
+    cv.imwrite(f'result.jpeg', img)
+    cv.waitKey(0)
+
 
 
 # Функция, которая размечает на ч/б изображении пиковые точки и возвращает их координаты
@@ -128,4 +167,7 @@ def marking_image(w_b_image):
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
-print( find_extremes_and_points(get_digitization_image(Otsus_method('ECG-1'))) )
+all_points = find_extremes_and_points(get_digitization_image(Otsus_method('ECG-3')))
+
+all_extremes = list(filter(lambda x: x[2] == 1, all_points))
+extrema_analysis(all_extremes)
