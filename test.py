@@ -121,7 +121,7 @@ def find_extremes_and_points(array, is_show=True):
             if point[2] == 1:
                 cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
             elif point[2] == 2:
-                cv.circle(img, point[:-1], 2, (0, 0, 255), -1)
+                cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
             last = point[:-1]
         cv.imshow("Image", img)
         cv.imwrite(f'result.jpeg', img)
@@ -130,30 +130,119 @@ def find_extremes_and_points(array, is_show=True):
     return last_points
 
 
+def get_and_find_points_r(all_extremes, is_show=True):   # многоуровневая сортировка (выведение точек R)
+    '''
+    ___________________________________________
+    можно заметить, что растояние у точек R до соседних изломов больше чем у большенства.
+    А так же они обычно выше остальных.
+    На этом основана следующая сортировка
+    ___________________________________________
+    :param all_extremes: список всех переломов
+    :param is_show: показывать результат или нет
+    :return: r_points - список точек R (x, y)
+    '''
 
-def extrema_analysis(all_extremes):
-    average_length = 0
-    for i in range(1, len(all_extremes)):
-        x1, y1, id1 = all_extremes[i]
-        x2, y2, id2 = all_extremes[i - 1]
-        average_length += ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
-    average_length = average_length / len(all_extremes) - 1
-    print(average_length)
+    average_length = 0  # среднее растояние между каждой точкой излома (экстркмум)
+    average_y = 0   # для поиска средней высоты
+    max_y = 10000   # для поиска самой высокой точки
+    for i in range(1, len(all_extremes)):   # проверяет все найденные изломы
+        x1, y1, id1 = all_extremes[i]   # текущий
+        x2, y2, id2 = all_extremes[i - 1]   # предыдущий
+        average_length += ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5   # суммируем
+        average_y += y2
+        if y2 < max_y:
+            max_y = y2
+    average_length = average_length / (len(all_extremes) - 1)   # считаем среднее
+    average_y = average_y / (len(all_extremes) - 1)   # считаем среднее
 
-    r_points = []
-    for i in range(1, len(all_extremes)):
-        x1, y1, id1 = all_extremes[i]
-        x2, y2, id2 = all_extremes[i - 1]
-        length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
-        if length > average_length * 1.4:
-            r_points.append((x2, y2))
+    # ______________________________________
+    # ещё можно заметить, что вокруг нужной точки соседние изломы находятся очень близко по оси Х, в отличие от других
+    # больших прямых
+    # ______________________________________
+
+    r_points = []   # будущие точки R
+    average_width = 0   # среднее растояние по оси Х между соседними перегибами
+    minimum_boundary = average_y - (average_y - max_y) / 3   # минимальный порог высоты, по которому надо оценивать
+    # точку, если она ниже, то пропускаем
+    for i in range(1, len(all_extremes) - 1):
+        x1, y1, id1 = all_extremes[i - 1]
+        x2, y2, id2 = all_extremes[i]
+        x3, y3, id3 = all_extremes[i + 1]
+        length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5   # теорема пифогора
+        length2 = ((x2 - x3) ** 2 + (y2 - y3) ** 2) ** 0.5
+        length = (length1 + length2) / 2   # среднее растояние между двумя соседними перегибами
+        if length > average_length * 1.4 and y2 < minimum_boundary:   # 1.4 - коофицент для растояния между соседними точками
+            r_points.append((x2, y2))   # добавляет в список
+            average_width += abs(x1 - x2) + abs(x1 - x3)   # считает среднее растояние по оси Х
+    average_width = average_width / (len(r_points) * 2 + 1)   # считаем
+
+    minimum_boundary = average_y - (average_y - max_y) / 5   # новый минимальный порог (меньше), чтоб ещё раз
+    # всё проверить, но уже рассмотреть больше точек (если вдруг какая-то затерялась)
+    for i in range(1, len(all_extremes) - 1):
+        x1, y1, id1 = all_extremes[i - 1]
+        x2, y2, id2 = all_extremes[i]
+        x3, y3, id3 = all_extremes[i + 1]
+        if (x2, y2) in r_points:   # если эту точку уже сохранили, то продолжаем
+            continue
+        length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5   # теорема пифогора
+        length2 = ((x2 - x3) ** 2 + (y2 - y3) ** 2) ** 0.5
+        length = (length1 + length2) / 2   # среднее растояние между двумя соседними перегибами
+        width = (abs(x1 - x2) + abs(x1 - x3)) / 2   # среднее растояние по оси Х между двумя соседями
+        # оно должно быть маньше среднего * 1.2 (левый коофицент)
+        if length > average_length * 1.2 and y2 < minimum_boundary and width < average_width * 1.2:   # те же самые
+            # условия, но + растояние по оси Х
+            r_points.append((x2, y2))   # добавляет в список
+
+    # _______________________________
+    # находми группы (если такие есть) рядом стоящих получишихся точек R, и после эти группы объеденяем в одну
+    # среднию точку R
+    # _______________________________
+
+    r_points_end = []   # окончательный результат
+    average_dist = 0   # среднее растояние между всеми найдеными точками
+    for i in range(1, len(r_points)):
+        x1, y1 = r_points[i - 1]
+        x2, y2 = r_points[i]
+        average_dist += ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5   # добавляем
+    average_dist = average_dist / (len(r_points) - 1)   # считаем
+
+    for point1 in r_points:   # перебираем все найденные точки R
+        x1, y1 = point1
+        all_x = [x1]   # иксы каждой точки из группы
+        all_y = [y1]   # игрикикаждой точки из группы
+        for point2 in r_points:   # перебираем каждую с каждой и находим их взаимное растояние друг к другу
+            if point1 == point2:
+                continue
+            x2, y2 = point2
+            dist = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5   # теорема пифогора
+            if dist < average_dist / 4:   # если растояние меньше 1/4 от среднего, то будем считать это группой
+                all_x.append(x2)   # добавляем
+                all_y.append(y2)
+        point_end = (sum(all_x) // len(all_x), sum(all_y) // len(all_y))   # добавляем результат группы (доже если 1-а)
+        r_points_end.append(point_end)
+    r_points = r_points_end   # присваевыем результат к конечному списку
+
+    if is_show:   # просто отображение результата (не обязательно)
+        img = cv.imread(f'result.jpeg')
+        cv.line(img, (0, int(minimum_boundary)), (np.size(img, 1), int(minimum_boundary)), (255, 0, 255), 1)
+        for point in r_points:
+            point = point[:2]
+            cv.circle(img, point, 5, (255, 0, 255), -1)
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("Image", img)
+        cv.waitKey(0)
+
+    return r_points   # return
+
 
 
 # Вызовы функций
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
-# all_points = find_extremes_and_points(get_digitization_image(Otsus_method('ECG-3')))
-# all_extremes = list(filter(lambda x: x[2] == 1, all_points))
-# extrema_analysis(all_extremes)
-# convert_to_jpeg('ECG-6.png')
+img_name = 'ECG-1'
+convert_to_jpeg(img_name)
+all_points = find_extremes_and_points(get_digitization_image(Otsus_method(img_name)))
+
+all_extremes = list(filter(lambda x: x[2] == 1, all_points))
+get_and_find_points_r(all_extremes)
