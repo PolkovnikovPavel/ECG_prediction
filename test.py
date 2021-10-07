@@ -6,7 +6,7 @@ import os
 
 # Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
 # Есть минус - она не универсальна и вряд ли заработает для других изображений
-def delete_background(img_name):
+def delete_background(img_name, is_show=True):
     hsv_min = np.array((0, 0, 0), np.uint8)  # Минимальный порог цвета
     hsv_max = np.array((240, 255, 120), np.uint8)  # Максимальный порог цвета
 
@@ -17,15 +17,15 @@ def delete_background(img_name):
     # изменён, BGR) в палитру HSV
     img_with_hsv_filter = cv.inRange(img_in_hsv, hsv_min, hsv_max) # Применяет к изобрежнию фильтр
 
-    cv.imshow('Filtered', img_with_hsv_filter)  # Показывает обработанное изображение
+    if is_show:
+        cv.imshow('Filtered', img_with_hsv_filter)  # Показывает обработанное изображение
     cv.imwrite(f'images/{img_name}_w-b.jpeg', img_with_hsv_filter)  # Сохраняет новое изображение
     cv.waitKey(0)
 
     return img_with_hsv_filter
 
-
 # Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
-def Otsus_method(img_name):
+def Otsus_method(img_name, is_show=True):
     img = cv.imread(f'images/{img_name}.jpeg')  # Чтение изображения
     cv.imshow("Original", img)  # Показ изображения
 
@@ -33,21 +33,22 @@ def Otsus_method(img_name):
     blur_img = cv.GaussianBlur(gray_img, (3, 3), 0)  # Размытие изображения для удаления клеточек
 
     (T, img_with_filter) = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)  # Применение фильтра
-    cv.imshow("Filtered", img_with_filter)  # Показ изображения
+    if is_show:
+        cv.imshow("Filtered", img_with_filter)  # Показ изображения
     cv.imwrite(f'images/{img_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
     cv.waitKey(0)
 
     return img_with_filter
 
-
 # Функция, которая обрезает изображение сверху и снизу на 1 пиксель (была нужна, потому что исходное изображение ECG-1
 # сверху и снизу имело чёрную маленькую рамку)
-def crop_image(img_name):
+def crop_image(img_name, is_show=True):
     img = cv.imread(f'images/{img_name}.jpeg')
     y0 = 1
     y1 = img.shape[0]-1
     crop_img = img[y0:y1]
-    cv.imshow('cropped', crop_img)
+    if is_show:
+        cv.imshow('cropped', crop_img)
     cv.imwrite(f'images/{img_name}.jpeg', crop_img)
     cv.waitKey(0)
 
@@ -128,7 +129,6 @@ def find_extremes_and_points(array, is_show=True):
         cv.waitKey(0)
 
     return last_points
-
 
 def get_and_find_points_r(all_extremes, is_show=True):   # многоуровневая сортировка (выведение точек R)
     '''
@@ -234,15 +234,31 @@ def get_and_find_points_r(all_extremes, is_show=True):   # многоуровн�
 
     return r_points   # return
 
+# Функция, которая проверяет, одинаковые ли расстояния между вершинами R
+def is_r_distance_equal(list_of_rs):
+    list_of_rs.sort()  # Сортируется входной список R
+    is_equal = False  # Переменная, отвечающая за результат
+    list_of_distance = []  # Список расстояний между вершинами
+    for i in range(len(list_of_rs)-1):  # Вычислений расстояний между вершинами
+        list_of_distance.append(list_of_rs[i+1][0]-list_of_rs[i][0])
+    
+    for i in range(len(list_of_distance)-1):  # Если расстояние между двумя вершинами равно или +-10%, то всё ок 
+        if (list_of_distance[i] <= list_of_distance[i+1]+list_of_distance[i+1]*0.1) and (list_of_distance[i] >= list_of_distance[i+1]-list_of_distance[i+1]*0.1):
+            is_equal = True
+        else:
+            is_equal = False
+            break
 
+
+    return is_equal  # Результат
 
 # Вызовы функций
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
 img_name = 'ECG-1'
-convert_to_jpeg(img_name)
+# convert_to_jpeg(img_name)
 all_points = find_extremes_and_points(get_digitization_image(Otsus_method(img_name)))
 
 all_extremes = list(filter(lambda x: x[2] == 1, all_points))
-get_and_find_points_r(all_extremes)
+is_r_distance_equal(get_and_find_points_r(all_extremes))
