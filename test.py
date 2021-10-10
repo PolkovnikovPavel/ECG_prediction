@@ -4,6 +4,7 @@ import math
 import re
 import os
 
+
 # Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
 # Есть минус - она не универсальна и вряд ли заработает для других изображений
 def delete_background(img_name):
@@ -53,6 +54,7 @@ def crop_image(img_name):
 
     return crop_img
 
+
 # Процедура, которая переводит выбранный файл в формат .jpeg и удаляет исходный
 def convert_to_jpeg(img_full_name):
     img = cv.imread(f'images/{img_full_name}')
@@ -60,10 +62,12 @@ def convert_to_jpeg(img_full_name):
     cv.imwrite(f'images/{img_name}.jpeg', img)
     os.remove(f'images/{img_full_name}')
 
+
 # Функция, которая заменяет "255" на "1"
 def get_digitization_image(img):
     img_list = np.where(img > 0, 1, 0)
     return img_list
+
 
 # Функция, которая ищет экстремумы на графике и может их затем продемонстрировать
 def find_extremes_and_points(array, is_show=True):
@@ -113,18 +117,18 @@ def find_extremes_and_points(array, is_show=True):
 
     last_points.append((array.shape[1], average_y, 2))   # сохраняет последний столбец, чтоб не было обрыва
 
+    img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
+    last = last_points[0][:-1]
+    for point in last_points:
+        cv.line(img, last, point[:-1], (255, 255, 255), 1)
+        if point[2] == 1:
+            cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
+        elif point[2] == 2:
+            cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
+        last = point[:-1]
+    cv.imwrite(f'result.jpeg', img)
     if is_show:
-        img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
-        last = last_points[0][:-1]
-        for point in last_points:
-            cv.line(img, last, point[:-1], (255, 255, 255), 1)
-            if point[2] == 1:
-                cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
-            elif point[2] == 2:
-                cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
-            last = point[:-1]
         cv.imshow("Image", img)
-        cv.imwrite(f'result.jpeg', img)
         cv.waitKey(0)
 
     return last_points
@@ -235,14 +239,47 @@ def get_and_find_points_r(all_extremes, is_show=True):   # многоуровн�
     return r_points   # return
 
 
+def get_and_find_points_q_and_s(all_extremes, points_r):
+    points_q = []
+    points_s = []
+    for i in range(1, len(all_extremes) - 1):
+        if all_extremes[i + 1][:2] in points_r:
+            points_q.append(all_extremes[i][:2])
+        if all_extremes[i - 1][:2] in points_r:
+            points_s.append(all_extremes[i][:2])
+    return points_q, points_s
+
+
+def get_dictionary_of_key_points(all_points, is_show=True):
+    key_points = {}
+    colors = {'R': (255, 0, 255),
+              'Q': (0, 200, 255),
+              'S': (0, 255, 193)}
+    all_extremes = list(filter(lambda x: x[2] == 1, all_points))
+    all_points_r = get_and_find_points_r(all_extremes, False)
+    points_q, points_s = get_and_find_points_q_and_s(all_extremes, all_points_r)
+
+    key_points['R'] = all_points_r
+    key_points['Q'] = points_q
+    key_points['S'] = points_s
+
+    if is_show:
+        img = cv.imread(f'result.jpeg')
+        for type in key_points:
+            for point in key_points[type]:
+                point = point[:2]
+                cv.circle(img, point, 4, colors[type], -1)
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("Image", img)
+        cv.waitKey(0)
+
 
 # Вызовы функций
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # Otsus_method('ECG-1')
-img_name = 'ECG-1'
-convert_to_jpeg(img_name)
-all_points = find_extremes_and_points(get_digitization_image(Otsus_method(img_name)))
+img_name = 'ECG-7'
+#convert_to_jpeg(img_name)
+all_points = find_extremes_and_points(get_digitization_image(Otsus_method(img_name)), is_show=False)
 
-all_extremes = list(filter(lambda x: x[2] == 1, all_points))
-get_and_find_points_r(all_extremes)
+get_dictionary_of_key_points(all_points)
