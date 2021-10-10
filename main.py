@@ -309,7 +309,7 @@ def get_and_find_points_r(all_extremes, is_show=True):  # многоуровне
 
 
 # Функция, которая проверяет, одинаковые ли расстояния между вершинами R и возвращает время в секундах
-def is_r_distance_equal(list_of_rs, img_name):
+def is_r_distance_equal(list_of_rs, img_name, is_show=True):
     list_of_rs.sort()  # Сортируется входной список R
     is_equal = False  # Переменная, отвечающая за результат
     list_of_distance = []  # Список расстояний между вершинами
@@ -337,7 +337,7 @@ def is_r_distance_equal(list_of_rs, img_name):
         average_distance //= len(list_of_distance)
 
         # Находим размер клеточки и считаем время
-        time_of_rs = find_square_length(img_name)
+        time_of_rs = find_square_length(img_name, is_show)
         time_of_rs, qua_of_squares = average_distance // time_of_rs, average_distance // time_of_rs / 5  # Делим среднее
         # расстояние между вершинами на средную длину клеточки, что вычислить, сколько клеточек между R-ками
 
