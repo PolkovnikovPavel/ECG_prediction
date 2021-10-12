@@ -48,9 +48,9 @@ def otsus_method(img_name, is_show=True):
 # Данная функция ищет на картинки клеточки и определяет, сколько 1 клеточка занимает пикселей
 def find_square_length(img_name, is_show=True):
     """
-    Работа данной функции основана на том, что что сначала находится график ЭКГ, затем он 
-    вычитается из исходного изображения и остаются только клеточки. Клеточки опять проходят 
-    через обнаружение, и из этого определяется, сколько в 1 клеточке пикселей. Это нужно при переводе 
+    Работа данной функции основана на том, что что сначала находится график ЭКГ, затем он
+    вычитается из исходного изображения и остаются только клеточки. Клеточки опять проходят
+    через обнаружение, и из этого определяется, сколько в 1 клеточке пикселей. Это нужно при переводе
     пиксели -> сантиметры -> милисекунды -> секунды
     """
     # Исходное изображение
@@ -126,7 +126,7 @@ def find_square_length(img_name, is_show=True):
         average_length += i
     average_length = average_length // len(list_of_squares_dis)
 
-    return average_length  # Возвращаем результат. Теперь мы знаем, сколько пикселей 
+    return average_length  # Возвращаем результат. Теперь мы знаем, сколько пикселей
     # занимает клеточка именно для этого изображения
 
 
@@ -207,18 +207,18 @@ def find_extremes_and_points(array, is_show=True):
 
     last_points.append((array.shape[1], average_y, 2))  # сохраняет последний столбец, чтоб не было обрыва
 
+    img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
+    last = last_points[0][:-1]
+    for point in last_points:
+        cv.line(img, last, point[:-1], (255, 255, 255), 1)
+        if point[2] == 1:
+            cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
+        elif point[2] == 2:
+            cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
+        last = point[:-1]
+    cv.imwrite(f'result.jpeg', img)
     if is_show:
-        img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)  # просто отображение результата (не обязательно)
-        last = last_points[0][:-1]
-        for point in last_points:
-            cv.line(img, last, point[:-1], (255, 255, 255), 1)
-            if point[2] == 1:
-                cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
-            elif point[2] == 2:
-                cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
-            last = point[:-1]
         cv.imshow("Image", img)
-        cv.imwrite(f'result.jpeg', img)
         cv.waitKey(0)
 
     return last_points
@@ -313,9 +313,10 @@ def get_and_find_points_r(all_extremes, is_show=True):  # многоуровне
             if dist < average_dist / 4:  # если растояние меньше 1/4 от среднего, то будем считать это группой
                 all_x.append(x2)  # добавляем
                 all_y.append(y2)
-        point_end = (sum(all_x) // len(all_x), sum(all_y) // len(all_y))  # добавляем результат группы (доже если 1-а)
-        r_points_end.append(point_end)
-    r_points = r_points_end  # присваевыем результат к конечному списку
+        point_end = (sum(all_x) // len(all_x), sum(all_y) // len(all_y))   # добавляем результат группы (доже если 1-а)
+        if point_end not in r_points_end:
+            r_points_end.append(point_end)
+    r_points = r_points_end   # присваевыем результат к конечному списку
 
     if is_show:  # просто отображение результата (не обязательно)
         img = cv.imread(f'result.jpeg')
@@ -327,7 +328,153 @@ def get_and_find_points_r(all_extremes, is_show=True):  # многоуровне
         cv.imshow("Image", img)
         cv.waitKey(0)
 
-    return r_points  # return
+    return r_points
+
+
+def get_and_find_points_q_and_s(all_extremes, points_r):   # отдаёт 2 списка с точками Q и S
+    """
+    выбирает 2 ключивые точки (Q и S) - это точки очень близкие к R (по оси Х), а так же самые низкие.
+    поэтому решено выбирать все точки в право и влево от R на растояние 1/5 RR и найти самые низкие справа и слева
+    :param all_extremes: all_extremes
+    :param points_r: points_r
+    :return: 2 списка с точками Q и S
+    """
+
+    points_q = []
+    points_s = []
+
+    list_of_x_r = list(map(lambda x: x[0], points_r))   # определяет среднию дистанцию между R
+    average_dist_x = 0
+    for i in range(len(points_r) - 1):
+        average_dist_x += list_of_x_r[i + 1] - list_of_x_r[i]
+    average_dist_x = average_dist_x / (len(points_r) - 1)
+
+    for point_r in points_r:
+        list_of_points_s = []
+        list_of_points_q = []
+        for i in range(1, len(all_extremes)):
+            point = all_extremes[i][:2]
+            if point[0] < point_r[0] - (average_dist_x / 5) or point == point_r:
+                continue
+            elif point[0] > point_r[0] + (average_dist_x / 5):
+                break
+            if point[0] > point_r[0]:
+                list_of_points_s.append(point)
+            else:
+                list_of_points_q.append(point)
+        points_s.append(max(list_of_points_s, key=lambda x: x[1]))   # берёт самую низкую точку из указанного диапазона
+        points_q.append(max(list_of_points_q, key=lambda x: x[1]))
+
+    return points_q, points_s
+
+
+def get_and_find_points_t(all_extremes, points_r):
+    """
+    работает так же как и определение точек Р, но в правую сторону.
+    Берёт все точки в диапозоне первой половины между R1 - R2, и выбирает самую высокую точку
+    :param all_extremes: all_extremes
+    :param points_r: points_r
+    :return: список со всеми точками T
+    """
+
+    points_t = []
+    average_width_r = 0
+    average_dist = 0
+    for i in range(len(points_r)):   # проверяет каждую точку R
+        if i < len(points_r) - 1:
+            width = points_r[i + 1][0] - points_r[i][0]   # растояние по оси Х между RR
+            average_width_r += width   # среднее растояние
+            points = list(filter(lambda x: x[0] > points_r[i][0] and x[0] < points_r[i][0] + width / 2, all_extremes))
+            # это самое главное - выбирает все точки, принадлежащие диапозону
+
+            points.sort(key=lambda x: x[1])
+            average_dist += points[0][0] - points_r[i][0]   # то на сколько точка Т удалена от R
+            points_t.append(points[0])
+        else:   # работет при обработке диапозона после последней точки R. Тут-то и нужны average_dist и average_width_r
+            average_width_r = average_width_r / (len(points_r) - 1)
+            average_dist = average_dist / (len(points_r) - 1)
+            points = list(filter(lambda x: x[0] > points_r[i][0] and x[0] < points_r[i][0] + average_width_r / 2, all_extremes))
+            points.sort(key=lambda x: x[1])
+            dist = points[0][0] - points_r[i][0]
+            if dist > average_dist * 0.75 and dist < average_dist * 1.25:
+                points_t.append(points[0])   # нужно, чтоб последняя точка не выбивалось от большенства
+    return points_t
+
+
+def get_and_find_points_p(all_extremes, points_r):
+    """
+        работает так же как и определение точек Т, но в левую сторону.
+        Берёт все точки в диапозоне первой половины между R0 - R1, и выбирает самую высокую точку
+        :param all_extremes: all_extremes
+        :param points_r: points_r
+        :return: список со всеми точками Р
+    """
+
+    points_p = []
+    average_width_r = 0
+    average_dist = 0
+    for i in range(len(points_r) - 1, -1, -1):   # проверяет каждую точку R в обратном порядке
+        if i > 0:
+            width = points_r[i][0] - points_r[i - 1][0]   # растояние по оси Х между RR
+            average_width_r += width   # среднее растояние
+            points = list(filter(lambda x: x[0] < points_r[i][0] and x[0] > points_r[i][0] - width / 2, all_extremes))
+            # это самое главное - выбирает все точки, принадлежащие диапозону
+
+            points.sort(key=lambda x: x[1])
+            average_dist += points_r[i][0] - points[0][0]   # то на сколько точка Р удалена от R
+            points_p.append(points[0])
+        else:   # работет при обработке диапозона перед первой точкой R. Тут-то и нужны average_dist и average_width_r
+            average_width_r = average_width_r / (len(points_r) - 1)
+            average_dist = average_dist / (len(points_r) - 1)
+            points = list(filter(lambda x: x[0] < points_r[i][0] and x[0] > points_r[i][0] - average_width_r / 2, all_extremes))
+            points.sort(key=lambda x: x[1])
+            dist = points_r[i][0] - points[0][0]
+            if dist > average_dist * 0.75 and dist < average_dist * 1.25:
+                points_p.append(points[0])   # нужно, чтоб самая первая точка не выбивалось от большенства
+    return points_p
+
+
+def get_dictionary_of_key_points(all_points, is_show=True):
+    """
+    функция, которая объеденяет все операции по вычислению ключевых точек
+    :param all_points: все точки, полученные ранее
+    :param is_show: is_show
+    :return: словарь со всеми ключевыми точками, и даже R
+    """
+
+    key_points = {}
+    colors = {'R': (255, 0, 255),   # цвета
+              'Q': (0, 200, 255),
+              'S': (0, 255, 193),
+              'T': (255, 214, 145),
+              'P': (92, 0, 255)}
+
+    all_extremes = list(filter(lambda x: x[2] == 1, all_points))   # выделяет из все точек только экстремумы
+    all_points_r = get_and_find_points_r(all_extremes, False)   # точки R
+    all_points_r.sort(key=lambda x: x[0])   # сортировка по возврастанию Х
+    all_extremes.sort(key=lambda x: x[0])
+
+    points_q, points_s = get_and_find_points_q_and_s(all_extremes, all_points_r)   # точтки Q и S
+    points_t = get_and_find_points_t(all_extremes, all_points_r)   # точки T
+    points_p = get_and_find_points_p(all_extremes, all_points_r)   # точки P
+
+    key_points['R'] = all_points_r
+    key_points['Q'] = points_q
+    key_points['S'] = points_s
+    key_points['T'] = points_t
+    key_points['P'] = points_p
+
+    if is_show:   # вывод результата
+        img = cv.imread(f'result.jpeg')
+        for type in key_points:
+            for point in key_points[type]:
+                point = point[:2]
+                cv.circle(img, point, 4, colors[type], -1)
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("Image", img)
+        cv.waitKey(0)
+
+    return key_points
 
 
 # Функция, которая проверяет, одинаковые ли расстояния между вершинами R и возвращает время в секундах
@@ -386,11 +533,13 @@ def is_r_distance_equal(list_of_rs, img_name, is_show=True):
 # Вызовы функций
 # crop_image('ECG-1')
 # delete_background('ECG-1')
-#find_square_length('ECG-1')
+# find_square_length('ECG-1')
 # Otsus_method('ECG-1')
-img_name = 'ECG-7'
+img_name = 'ECG-1'
 # convert_to_jpeg(img_name)
-all_points = find_extremes_and_points(get_digitization_image(otsus_method(img_name, False)), False)
+all_points = find_extremes_and_points(get_digitization_image(otsus_method(img_name)), is_show=False)
 
 all_extremes = list(filter(lambda x: x[2] == 1, all_points))
 print(is_r_distance_equal(get_and_find_points_r(all_extremes, False), img_name, False))
+
+get_dictionary_of_key_points(all_points)
