@@ -21,8 +21,8 @@ def delete_background(img_name, is_show=True):
 
     if is_show:
         cv.imshow('Filtered', img_with_hsv_filter)  # Показывает обработанное изображение
+        cv.waitKey(0)
     cv.imwrite(f'images/{img_name}_w-b.jpeg', img_with_hsv_filter)  # Сохраняет новое изображение
-    cv.waitKey(0)
 
     return img_with_hsv_filter
 
@@ -39,8 +39,8 @@ def otsus_method(img_name, is_show=True):
     T, img_with_filter = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)  # Применение фильтра
     if is_show:
         cv.imshow("Filtered", img_with_filter)  # Показ изображения
+        cv.waitKey(0)
     cv.imwrite(f'images/{img_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
-    cv.waitKey(0)
 
     return img_with_filter
 
@@ -139,8 +139,8 @@ def crop_image(img_name, n, is_show=True):
     crop_img = img[y0:y1]
     if is_show:
         cv.imshow('cropped', crop_img)
+        cv.waitKey(0)
     cv.imwrite(f'images/{img_name}.jpeg', crop_img)
-    cv.waitKey(0)
 
     return crop_img
 
@@ -535,7 +535,7 @@ def is_r_distance_equal(list_of_rs, img_name, is_show=True):
 # delete_background('ECG-1')
 # find_square_length('ECG-1')
 # Otsus_method('ECG-1')
-img_name = 'ECG-1'
+img_name = 'ECG-7'
 # convert_to_jpeg(img_name)
 all_points = find_extremes_and_points(get_digitization_image(otsus_method(img_name)), is_show=False)
 
