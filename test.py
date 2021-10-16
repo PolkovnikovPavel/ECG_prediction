@@ -5,9 +5,16 @@ import re
 import os
 
 
-# Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
-# Есть минус - она не универсальна и вряд ли заработает для других изображений
 def delete_background(img_name, is_show=True):
+    """Удаление фона(костыль)
+
+    Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
+    Есть минус - она не универсальна и вряд ли заработает для других изображений
+
+    :param img_name: имя изображения
+    :param is_show: is_show
+    :return: ч/б изобрежение без фона
+    """
     hsv_min = np.array((0, 0, 0), np.uint8)  # Минимальный порог цвета
     hsv_max = np.array((240, 255, 120), np.uint8)  # Максимальный порог цвета
 
@@ -27,8 +34,15 @@ def delete_background(img_name, is_show=True):
     return img_with_hsv_filter
 
 
-# Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
 def otsus_method(img_name, is_show=True):
+    """Удаление фона
+
+    Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
+
+    :param img_name: имя изображения
+    :param is_show: is_show
+    :return: ч/б изображение без заднего фона (только график ЭКГ)
+    """
     img = cv.imread(f'images/{img_name}.jpeg')  # Чтение изображения
     if is_show:
         cv.imshow("Original", img)  # Показ изображения
@@ -36,7 +50,7 @@ def otsus_method(img_name, is_show=True):
     gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)  # Преобразование исходного изображения в ч/б
     blur_img = cv.GaussianBlur(gray_img, (3, 3), 0)  # Размытие изображения для удаления клеточек
 
-    T, img_with_filter = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)  # Применение фильтра
+    img_with_filter = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)[1]  # Применение фильтра
     if is_show:
         cv.imshow("Filtered", img_with_filter)  # Показ изображения
         cv.waitKey(0)
@@ -45,13 +59,18 @@ def otsus_method(img_name, is_show=True):
     return img_with_filter
 
 
-# Данная функция ищет на картинки клеточки и определяет, сколько 1 клеточка занимает пикселей
 def find_square_length(img_name, is_show=True):
-    """
+    """Ищет на картинки клеточки и определяет, сколько 1 клеточка занимает пикселей.
+
+    Суть работы
+    ___________________________________________
     Работа данной функции основана на том, что что сначала находится график ЭКГ, затем он
     вычитается из исходного изображения и остаются только клеточки. Клеточки опять проходят
     через обнаружение, и из этого определяется, сколько в 1 клеточке пикселей. Это нужно при переводе
     пиксели -> сантиметры -> милисекунды -> секунды
+
+    :param img_name: имя изображения
+    :return: сколько пикселей занимает 1 клеточка
     """
     # Исходное изображение
     img = cv.imread(f'images/{img_name}.jpeg', cv.IMREAD_GRAYSCALE)
@@ -126,13 +145,22 @@ def find_square_length(img_name, is_show=True):
         average_length += i
     average_length = average_length // len(list_of_squares_dis)
 
-    return average_length  # Возвращаем результат. Теперь мы знаем, сколько пикселей
-    # занимает клеточка именно для этого изображения
+    """
+    У алгоритма существует некоторая погрешность, из-за которой он иногда находит либо сколько пикселей в большой, либо
+    в маленькой клеточке. Из-за этого, стоит в других функция проверить количество клеток. Если он слишком мало, то
+    алгоритм определил количество больших клеточек. Если слишком велико - то маленьких.
+    """
+    return average_length
 
 
-# Функция, которая обрезает изображение сверху и снизу на n пиксель (была нужна, потому что исходное изображение ECG-1
-# сверху и снизу имело чёрную маленькую рамку)
 def crop_image(img_name, n, is_show=True):
+    """Обрезает изображение сверху и снизу на n пиксель
+
+    :param img_name: имя изображения
+    :param n: число пикселей, на которое изображение обрежется
+    :param is_show: is_show
+    :return: обрезанное изображение
+    """
     img = cv.imread(f'images/{img_name}.jpeg')
     y0 = n
     y1 = img.shape[0] - n
@@ -145,22 +173,34 @@ def crop_image(img_name, n, is_show=True):
     return crop_img
 
 
-# Процедура, которая переводит выбранный файл в формат .jpeg и удаляет исходный
 def convert_to_jpeg(img_full_name):
+    """Переводит выбранный файл в формат .jpeg и удаляет исходный
+
+    :param img_full_name: полное имя изображения (имя.расширение)
+    """
     img = cv.imread(f'images/{img_full_name}')
     img_name = re.split(r'\.', img_full_name)[0]
     cv.imwrite(f'images/{img_name}.jpeg', img)
     os.remove(f'images/{img_full_name}')
 
 
-# Функция, которая заменяет "255" на "1"
 def get_digitization_image(img):
+    """Обрабатывает изображение, заменяя все светлые цвета на белый.
+
+    :param img: изображение
+    :return: изображение, где все цвета кроме чёрного - белые
+    """
     img_list = np.where(img > 0, 1, 0)
     return img_list
 
 
-# Функция, которая ищет экстремумы на графике и может их затем продемонстрировать
 def find_extremes_and_points(array, is_show=True):
+    """Ищет экстремумы на графике и может их затем продемонстрировать.
+
+    :param array: изображение, прошедшие удаление заднего фона и переведённое в нолики и единички
+    :param is_show: is_show
+    :return: список всех экстремумов [координата х, координата у, точка экстремума/точка перегиба]
+    """
     last_points = []  # результат (х, у, id)
     # id:
     # 1) точка экстремума
@@ -225,12 +265,15 @@ def find_extremes_and_points(array, is_show=True):
 
 
 def get_and_find_points_r(all_extremes, is_show=True):  # многоуровневая сортировка (выведение точек R)
-    """
+    """Находит все точки R.
+
+    Суть работы
     ___________________________________________
-    можно заметить, что растояние у точек R до соседних изломов больше чем у большенства.
+    Можно заметить, что растояние у точек R до соседних изломов больше чем у большенства.
     А так же они обычно выше остальных.
     На этом основана следующая сортировка
-    ___________________________________________
+    __________________________________________
+
     :param all_extremes: список всех переломов
     :param is_show: показывать результат или нет
     :return: r_points - список точек R (x, y)
@@ -332,9 +375,10 @@ def get_and_find_points_r(all_extremes, is_show=True):  # многоуровне
 
 
 def get_and_find_points_q_and_s(all_extremes, points_r):   # отдаёт 2 списка с точками Q и S
-    """
-    выбирает 2 ключивые точки (Q и S) - это точки очень близкие к R (по оси Х), а так же самые низкие.
-    поэтому решено выбирать все точки в право и влево от R на растояние 1/5 RR и найти самые низкие справа и слева
+    """Выбирает 2 ключивые точки (Q и S) - это точки очень близкие к R (по оси Х), а так же самые низкие.
+
+    Поэтому решено выбирать все точки в право и влево от R на растояние 1/5 RR и найти самые низкие справа и слева.
+
     :param all_extremes: all_extremes
     :param points_r: points_r
     :return: 2 списка с точками Q и S
@@ -369,9 +413,11 @@ def get_and_find_points_q_and_s(all_extremes, points_r):   # отдаёт 2 сп
 
 
 def get_and_find_points_t(all_extremes, points_r):
-    """
-    работает так же как и определение точек Р, но в правую сторону.
-    Берёт все точки в диапозоне первой половины между R1 - R2, и выбирает самую высокую точку
+    """Находит все точки T
+
+    Работает так же как и определение точек Р, но в правую сторону: берёт все точки в диапозоне первой половины между
+    R1 - R2, и выбирает самую высокую точку
+
     :param all_extremes: all_extremes
     :param points_r: points_r
     :return: список со всеми точками T
@@ -402,12 +448,13 @@ def get_and_find_points_t(all_extremes, points_r):
 
 
 def get_and_find_points_p(all_extremes, points_r):
-    """
-        работает так же как и определение точек Т, но в левую сторону.
-        Берёт все точки в диапозоне первой половины между R0 - R1, и выбирает самую высокую точку
-        :param all_extremes: all_extremes
-        :param points_r: points_r
-        :return: список со всеми точками Р
+    """Работает так же как и определение точек Т, но в левую сторону.
+
+    Берёт все точки в диапозоне первой половины между R0 - R1, и выбирает самую высокую точку
+
+    :param all_extremes: all_extremes
+    :param points_r: points_r
+    :return: список со всеми точками Р
     """
 
     points_p = []
@@ -436,7 +483,8 @@ def get_and_find_points_p(all_extremes, points_r):
 
 def get_dictionary_of_key_points(all_points, is_show=True):
     """
-    функция, которая объеденяет все операции по вычислению ключевых точек
+    Функция, которая объеденяет все операции по вычислению ключевых точек.
+
     :param all_points: все точки, полученные ранее
     :param is_show: is_show
     :return: словарь со всеми ключевыми точками, и даже R
@@ -454,7 +502,7 @@ def get_dictionary_of_key_points(all_points, is_show=True):
     all_points_r.sort(key=lambda x: x[0])   # сортировка по возврастанию Х
     all_extremes.sort(key=lambda x: x[0])
 
-    points_q, points_s = get_and_find_points_q_and_s(all_extremes, all_points_r)   # точтки Q и S
+    points_q, points_s = get_and_find_points_q_and_s(all_extremes, all_points_r)   # точки Q и S
     points_t = get_and_find_points_t(all_extremes, all_points_r)   # точки T
     points_p = get_and_find_points_p(all_extremes, all_points_r)   # точки P
 
@@ -477,10 +525,16 @@ def get_dictionary_of_key_points(all_points, is_show=True):
     return key_points
 
 
-# Функция, которая проверяет, одинаковые ли расстояния между вершинами R и возвращает время в секундах
 def is_r_distance_equal(list_of_rs, img_name, is_show=True):
+    """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R и возвращает время в секундах.
+
+    :param list_of_rs: список с координатами всех точек R
+    :param img_name: название изучаемого изображения
+    :param is_show: показывать ли промежуточные результаты
+    :return: Возвращает список, где равное ли расстояние между R, количество больших клеточек между ними и время в сек.
+    """
     list_of_rs.sort()  # Сортируется входной список R
-    is_equal = False  # Переменная, отвечающая за результат
+    is_equal = True  # Переменная, отвечающая за результат
     list_of_distance = []  # Список расстояний между вершинами
     for i in range(len(list_of_rs) - 1):  # Вычислений расстояний между вершинами
         list_of_distance.append(list_of_rs[i + 1][0] - list_of_rs[i][0])
@@ -490,43 +544,29 @@ def is_r_distance_equal(list_of_rs, img_name, is_show=True):
     for i in range(len(list_of_distance) - 1):  # ЕСЛИ расстояние между двумя вершинами равно или +-10%, то всё ок,
         # ИНАЧЕ прекращаем выполнение
         average_distance += list_of_distance[i + 1]
-        if (list_of_distance[i] <= list_of_distance[i + 1] + list_of_distance[i + 1] * 0.1) and (
-                list_of_distance[i] >= list_of_distance[i + 1] - list_of_distance[i + 1] * 0.1):
-            is_equal = True
-        else:
+        if not ((list_of_distance[i] <= list_of_distance[i + 1] + list_of_distance[i + 1] * 0.1) and (
+                list_of_distance[i] >= list_of_distance[i + 1] - list_of_distance[i + 1] * 0.1)):
             is_equal = False
-            break
 
     if len(list_of_distance) == 1:  # Т.е. если у нас всего 2 вершины R
         is_equal = True
-    if is_equal:  # Если расстояние всё-такие одинаковое, то ищем среднее расстояние
-        # между вершинами
 
-        # Считаем среднее расстояние между вершинами R
-        average_distance //= len(list_of_distance)
+    # Считаем среднее расстояние между вершинами R
+    average_distance //= len(list_of_distance)
 
-        # Находим размер клеточки и считаем время
-        time_of_rs = find_square_length(img_name, is_show)
-        time_of_rs, qua_of_squares = average_distance // time_of_rs, average_distance // time_of_rs / 5  # Делим среднее
-        # расстояние между вершинами на средную длину клеточки, что вычислить, сколько клеточек между R-ками
+    # Находим размер клеточки и считаем время
+    time_of_rs = find_square_length(img_name, is_show)
+    time_of_rs, qua_of_squares = average_distance // time_of_rs, average_distance // time_of_rs  # Делим среднее
+    # расстояние между вершинами на средную длину клеточки, что вычислить, сколько клеточек между R-ками
 
-        # Это условие позволяет на последнем этапе убирать шумы контуров, если они каким-то чудом смогли сюда добраться,
-        # путём обощения маленьких контуров в большую клетку
-        if qua_of_squares <= 1:
-            qua_of_squares *= 5
-            time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной больщой клеточки - 2,5 см или 0,2 секунды
-        elif qua_of_squares < 3:
-            qua_of_squares *= 5
-            time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной больщой клеточки - 2,5 см или 0,2 секунды
-        else:
-            time_of_rs = round(time_of_rs * 0.04, 2)  # Размер одной маленькой клеточки - 0,5 см или 0,04 секунды
-    else:  # Если нет, то просто возвращаем False
-        return is_equal
+    # Это условие позволяет на последнем этапе убирать шумы контуров, если они каким-то чудом смогли сюда добраться,
+    # путём обощения маленьких контуров в большую клетку
+    if qua_of_squares < 6:
+        time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной больщой клеточки - 2,5 см или 0,2 секунды
+    else:
+        qua_of_squares /= 5
+        time_of_rs = round(time_of_rs * 0.04, 2)  # Размер одной маленькой клеточки - 0,5 см или 0,04 секунды
 
-    """
-    Результат, где is_equal - равное ли растояние между вершинами R, qua_of_squares - количество больших клеточек между
-    вершинами (большие проще считать), time_of_Rs - время (в сек.) между R (RR интервал)
-    """
     return [is_equal, qua_of_squares, time_of_rs]
 
 
@@ -534,12 +574,12 @@ def is_r_distance_equal(list_of_rs, img_name, is_show=True):
 # crop_image('ECG-1')
 # delete_background('ECG-1')
 # find_square_length('ECG-1')
-# Otsus_method('ECG-1')
-img_name = 'ECG-7'
+# otsus_method('ECG-1')
+img_name = 'ECG-3'
 # convert_to_jpeg(img_name)
 all_points = find_extremes_and_points(get_digitization_image(otsus_method(img_name)), is_show=False)
-
+#
 all_extremes = list(filter(lambda x: x[2] == 1, all_points))
 print(is_r_distance_equal(get_and_find_points_r(all_extremes, False), img_name, False))
-
+#
 get_dictionary_of_key_points(all_points)
