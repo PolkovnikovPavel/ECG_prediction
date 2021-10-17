@@ -6,7 +6,12 @@ import os
 
 
 class Graphic:
-    def __init__(self, image_full_name):
+    def __init__(self, image_full_name, speed):
+        """Конструктор класс
+
+        :param image_full_name: имя.расширение
+        :param speed: Скорость записи ЭКГ. Обычно 25 или 50 мм/с
+        """
         # Параметры изображения
         self.__image_full_name = image_full_name
         self.__image_name = re.split(r'\.', self.__image_full_name)[0]
@@ -14,6 +19,10 @@ class Graphic:
         self.__length_of_square = None
         self.__all_extremes = None
         self.__all_points = None
+        self.__speed_of_ecg = speed
+        self.characteristics = []  # В этот список будем записывать все характеристики, такие как все интервалы и ЧСС
+        # Когда нам точно станут известным все характеристики, какие интервалы нам нужны, то заменим список np.array
+        # И все обращения к нему стоит переделать с .append, к поэлементному обращению
 
     def __delete_background(self, is_show=True):
         """Удаление фона(костыль)
@@ -100,11 +109,15 @@ class Graphic:
             cv.imshow('result', blur_img)
             cv.waitKey(0)
         cv.imwrite(f'images/{self.__image_name}_w-o_graphic.jpeg', blur_img)
-        variable = self.__image_name
+
+        variable = self.__image_name  # Необходимость для сохранения исходного имя файла
         self.__image_name = self.__image_name + '_w-o_graphic'
+
         # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
         img_with_out_graphic_otsus = self.__otsus_method(False)
-        self.__image_name = variable
+
+        self.__image_name = variable  # Возвращает исходное имя файла
+
         # Выделяем контуры клеточек
         (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
 
@@ -281,6 +294,9 @@ class Graphic:
         :param is_show: показывать результат или нет
         :return: r_points - список точек R (x, y)
         """
+        # Проверка на наличие экстремумов в параметрах класса и поиск, в противном случае
+        if self.__all_extremes is None:
+            self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)), False)
 
         average_length = 0  # среднее растояние между каждой точкой излома (экстркмум)
         average_y = 0  # для поиска средней высоты
@@ -508,6 +524,7 @@ class Graphic:
                   'T': (255, 214, 145),
                   'P': (92, 0, 255)}
 
+        # Проверка на наличие всех точек в параметрах класса и их поиск, в противном случае
         if self.__all_points is None:
             self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)), False)
 
@@ -540,18 +557,17 @@ class Graphic:
 
         return key_points
 
-    def __is_r_distance_equal(self, list_of_rs):
+    def __is_r_distance_equal(self):
         """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R и возвращает время в секундах.
 
-        :param list_of_rs: список с координатами всех точек R
         :return: Возвращает список, где равное ли расстояние между R, количество больших клеточек между ними и время
         в сек.
         """
-        list_of_rs.sort()  # Сортируется входной список R
+        self.__dict_of_points['R'].sort()  # Сортируется входной список R
         is_equal = True  # Переменная, отвечающая за результат
         list_of_distance = []  # Список расстояний между вершинами
-        for i in range(len(list_of_rs) - 1):  # Вычислений расстояний между вершинами
-            list_of_distance.append(list_of_rs[i + 1][0] - list_of_rs[i][0])
+        for i in range(len(self.__dict_of_points['R']) - 1):  # Вычислений расстояний между вершинами
+            list_of_distance.append(self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0])
 
         average_distance = list_of_distance[0]  # Среднее растояние между вершинами R (сразу присваивается
         # нулевой элемент),
@@ -573,19 +589,36 @@ class Graphic:
         if self.__length_of_square is None:
             self.__find_square_length(False)
         time_of_rs = self.__length_of_square
-        time_of_rs, qua_of_squares = average_distance // time_of_rs, average_distance // time_of_rs  # Делим среднее
+        time_of_rs, qua_of_big_squares = average_distance // time_of_rs, average_distance // time_of_rs  # Делим среднее
         # расстояние между вершинами на средную длину клеточки, что вычислить, сколько клеточек между R-ками
 
         # Это условие позволяет на последнем этапе убирать шумы контуров, если они каким-то чудом смогли сюда добраться,
         # путём обощения маленьких контуров в большую клетку
-        if qua_of_squares < 6:
-            time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной больщой клеточки - 2,5 см или 0,2 секунды
+        if qua_of_big_squares < 6:
+            length_of_rs = qua_of_big_squares*5  # расстояние между вершинами R в мм
+            if self.__speed_of_ecg == 25:
+                time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной большой клеточки - 0.5 см или 0,2 секунды
+            else:
+                time_of_rs = round(time_of_rs * 0.1, 2)  # Размер одной большой клеточки - 0.5 см или 0,1 секунды
         else:
-            qua_of_squares /= 5
-            time_of_rs = round(time_of_rs * 0.04, 2)  # Размер одной маленькой клеточки - 0,5 см или 0,04 секунды
+            length_of_rs = qua_of_big_squares  # расстояние между вершинами R в мм
+            qua_of_big_squares /= 5
+            if self.__speed_of_ecg == 25:
+                time_of_rs = round(time_of_rs * 0.04, 2)  # Размер одной маленькой клеточки - 0,1 см или 0,04 секунды
+            else:
+                time_of_rs = round(time_of_rs * 0.1, 2)  # Размер одной одной маленькой клеточки - 0,1 см
+                # или 0,02 секунды
 
-        return [is_equal, qua_of_squares, time_of_rs]
+        return [is_equal, qua_of_big_squares, time_of_rs, length_of_rs]
+
+    def find_heart_rate(self):
+        """Ищет ЧСС
+
+        """
+        self.characteristics.append(round(60/(self.__is_r_distance_equal()[3]*0.0016*self.__speed_of_ecg), 2))
 
 
-graphic = Graphic('ECG-1.jpeg')
-print(graphic.get_dictionary_of_key_points(False))
+graphic = Graphic('ECG-1.jpeg', 25)
+graphic.get_dictionary_of_key_points(False)
+graphic.find_heart_rate()
+print(graphic.characteristics)
