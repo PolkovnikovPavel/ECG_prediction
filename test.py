@@ -261,6 +261,7 @@ def find_extremes_and_points(array, is_show=True):
         cv.imshow("Image", img)
         cv.waitKey(0)
 
+    last_points.sort(key=lambda x: x[0])
     return last_points
 
 
@@ -478,6 +479,7 @@ def get_and_find_points_p(all_extremes, points_r):
             dist = points_r[i][0] - points[0][0]
             if dist > average_dist * 0.75 and dist < average_dist * 1.25:
                 points_p.append(points[0])   # нужно, чтоб самая первая точка не выбивалось от большенства
+    points_p.sort(key=lambda x: x[0])
     return points_p
 
 
@@ -570,6 +572,169 @@ def is_r_distance_equal(list_of_rs, img_name, is_show=True):
     return [is_equal, qua_of_squares, time_of_rs]
 
 
+def defining_intervals_t_p(key_points, all_points, is_show=False):
+    img = cv.imread(f'result.jpg')
+    all_points_rt = []  # правее R
+    all_points_lp = []  # левее P
+    for point_t in key_points['T']:
+        point_p = key_points['P'][-1]  # определение ближайших точек P и Q
+        for point in key_points['P']:
+            if point[0] < point_t[0]:
+                continue
+            if point[0] < point_p[0]:
+                point_p = point
+        point_q = key_points['Q'][-1]
+        for point in key_points['Q']:
+            if point[0] < point_t[0]:
+                continue
+            if point[0] < point_q[0]:
+                point_q = point
+
+        # выбирает все точки из промежутка между T и P
+        all_extremes = list(filter(lambda x: x[0] > point_t[0] and x[0] <= point_p[0], all_points))
+        length_tq = ((point_t[0] - point_q[0]) ** 2 + (point_t[1] - point_q[1]) ** 2) ** 0.5  # теорема Пифагора
+        if len(all_extremes) < 1:
+            continue
+        all_points_b = []
+        for i in range(len(all_extremes) - 1):
+            if all_extremes[i][0] > (abs(point_t[0] - point_p[0]) // 2) + point_t[0]:
+                break
+            point_b = all_extremes[i]
+            length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+            length_qb = ((point_q[0] - point_b[0]) ** 2 + (point_q[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+
+            # теорема косинусов для определения угла отклонения
+            angle = math.acos((length_qb ** 2 + length_tq ** 2 - length_tb ** 2) / (2 * length_qb * length_tq))
+            # небольшой коофицент погрешности для более точного определения
+            angle -= ((abs(point_b[0] - point_t[0]) / (abs(point_t[0] - point_p[0]) // 10)) * 0.03)
+
+            all_points_b.append((point_b[0], point_b[1], angle))
+        point_after_t = max(all_points_b, key=lambda x: x[2])[:2]
+        all_points_rt.append(point_after_t)
+
+        all_points_b = []  # всё тоже самое, но для другой точки
+        length_tr_p = ((point_p[0] - point_after_t[0]) ** 2 + (point_p[1] - point_after_t[1]) ** 2) ** 0.5
+        for i in range(len(all_extremes) - 1):
+            if all_extremes[i][0] < (abs(point_t[0] - point_p[0]) // 2) + point_t[0]:
+                continue
+            point_b = all_extremes[i]
+            length_tr_b = ((point_b[0] - point_after_t[0]) ** 2 + (point_b[1] - point_after_t[1]) ** 2) ** 0.5
+            length_p_b = ((point_b[0] - point_p[0]) ** 2 + (point_b[1] - point_p[1]) ** 2) ** 0.5
+            # теорема косинусов для определения угла отклонени я
+            angle = math.acos((length_tr_p ** 2 + length_tr_b ** 2 - length_p_b ** 2) / (2 * length_tr_p * length_tr_b))
+            # небольшой коофицент погрешности для более точного определения
+            angle += ((abs(point_b[0] - point_t[0]) / (abs(point_t[0] - point_p[0]) // 10)) * 0.03)
+            all_points_b.append((point_b[0], point_b[1], angle))
+        point_before_p = max(all_points_b, key=lambda x: x[2])[:2]
+        all_points_lp.append(point_before_p)
+        # ▼ визуализация ▼
+        cv.circle(img, point_after_t[:2], 4, (255, 255, 255), -1)
+        cv.circle(img, point_before_p[:2], 4, (255, 255, 255), -1)
+    if is_show:
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("average_y", img)
+        cv.waitKey(0)
+    key_points['RT'] = all_points_rt
+    key_points['LP'] = all_points_lp
+    return all_points_rt, all_points_lp
+
+
+def defining_intervals_s_t(key_points, all_points, is_show=False):
+    img = cv.imread(f'result.jpg')
+    all_points_lt = []  # левее Т
+    all_points_rs = []  # правее S
+    for point_s in key_points['S']:
+        point_t = key_points['T'][-1]
+        for point in key_points['T']:
+            if point[0] < point_s[0]:
+                continue
+            if point[0] < point_t[0]:
+                point_t = point
+
+        # выбирает все точки из промежутка между S и T
+        all_extremes = list(filter(lambda x: x[0] > point_s[0] and x[0] <= point_t[0], all_points))
+        if len(all_extremes) < 1:
+            continue
+        length_st = ((point_t[0] - point_s[0]) ** 2 + (point_t[1] - point_s[1]) ** 2) ** 0.5  # теорема Пифагора
+        all_points_b = []
+        for i in range(len(all_extremes) - 1):
+            if all_extremes[i][0] > (abs(point_t[0] - point_s[0]) // 2) + point_s[0]:
+                break
+            point_b = all_extremes[i]
+            length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+            length_bs = ((point_s[0] - point_b[0]) ** 2 + (point_s[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+            # теорема косинусов для определения угла отклонения
+            angle = math.acos((length_bs ** 2 + length_st ** 2 - length_tb ** 2) / (2 * length_bs * length_st))
+            height = length_bs * math.sin(angle)
+            # небольшой коофицент погрешности для более точного определения
+            height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
+
+            all_points_b.append((point_b[0], point_b[1], height))
+        point_rs = max(all_points_b, key=lambda x: x[2])[:2]
+        all_points_rs.append(point_rs)
+
+        length_rs_t = ((point_t[0] - point_rs[0]) ** 2 + (point_t[1] - point_rs[1]) ** 2) ** 0.5  # теорема Пифагора
+        all_points_b = []
+        for i in range(len(all_extremes) - 1):
+            if all_extremes[i][0] > (abs(point_t[0] - point_s[0]) / 3) * 2 + point_s[0]:
+                break
+            if all_extremes[i][0] <= point_rs[0]:
+                continue
+            point_b = all_extremes[i]
+            length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+            length_b_rs = ((point_rs[0] - point_b[0]) ** 2 + (point_rs[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+            if length_tb + length_b_rs <= length_rs_t:  # основное свойства существования треуголька
+                continue
+            # теорема косинусов для определения угла отклонения и высоты относительно RS-T
+            angle = math.acos((length_b_rs ** 2 + length_rs_t ** 2 - length_tb ** 2) / (2 * length_b_rs * length_rs_t))
+            height = length_b_rs * math.sin(angle)
+            # небольшой коофицент погрешности для более точного определения
+            height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
+
+            all_points_b.append((point_b[0], point_b[1], height))
+        point_lt = max(all_points_b, key=lambda x: x[2])[:2]
+        all_points_lt.append(point_lt)
+        # ▼ визуализация ▼
+        cv.circle(img, point_rs[:2], 4, (255, 255, 255), -1)
+        cv.circle(img, point_lt[:2], 4, (255, 255, 255), -1)
+    if is_show:
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("average_y", img)
+        cv.waitKey(0)
+    key_points['LT'] = all_points_lt
+    key_points['RS'] = all_points_rs
+    return all_points_rs, all_points_lt
+
+
+def set_points_for_intervals(key_points, all_points, is_show=False):
+    """
+    Добавляет в основной словарь с ключевыми точками новые.
+    Это просто объединение всех функций по определению каких-то определённых точек
+
+    :param key_points: словарь с ключ-точками
+    :param all_points: все точки (вообще все)
+    :param is_show: не обязательно
+    :return:
+    """
+    defining_intervals_t_p(key_points, all_points)
+    defining_intervals_s_t(key_points, all_points)
+    if is_show:
+        try:
+            img = cv.imread(f'result.jpg')
+        except Exception:
+            return
+        all_points = []
+        all_points.extend(key_points['RT'])
+        all_points.extend(key_points['LT'])
+        all_points.extend(key_points['LP'])
+        all_points.extend(key_points['RS'])
+        for point in all_points:
+            cv.circle(img, point[:2], 4, (255, 255, 255), -1)
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("average_y", img)
+        cv.waitKey(0)
+    return True
+
 # Вызовы функций
 # crop_image('ECG-1')
 # delete_background('ECG-1')
@@ -582,4 +747,5 @@ all_points = find_extremes_and_points(get_digitization_image(otsus_method(img_na
 all_extremes = list(filter(lambda x: x[2] == 1, all_points))
 print(is_r_distance_equal(get_and_find_points_r(all_extremes, False), img_name, False))
 #
-get_dictionary_of_key_points(all_points)
+key_points = get_dictionary_of_key_points(all_points, False)
+set_points_for_intervals(key_points, all_points, True)
