@@ -51,14 +51,83 @@ class Graphic:
     def __get_intervals(self):
         """Ищет все интервалы
         """
-        dict_of_points = copy.copy(self.dict_of_points)
+        dict_of_points = copy.deepcopy(self.dict_of_points)
 
-        list_of_tp = []
+        list_of_intervals = []
         for i in range(len(dict_of_points['LP'])):
-            list_of_tp.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
-            del dict_of_points['LP'][0]
-            del dict_of_points['RT'][0]
-        self.dict_of_intervals['TP'] = list_of_tp
+            if len(dict_of_points['LP']) > 0 and len(dict_of_points['T']) > 0:
+                list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
+                del dict_of_points['LP'][0]
+                del dict_of_points['RT'][0]
+        self.dict_of_intervals['TP'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.dict_of_points)
+        list_of_intervals = []
+        for i in range(len(dict_of_points['R'])-1):
+            if len(dict_of_points['R']) > 1:
+                list_of_intervals.append(abs(dict_of_points['R'][0][0]-dict_of_points['R'][1][0]))
+                del dict_of_points['R'][0]
+        self.dict_of_intervals['RR'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.dict_of_points)
+        list_of_intervals = []
+        for i in range(len(dict_of_points['LP'])-1):
+            if len(dict_of_points['LP']) > 1:
+                list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['LP'][1][0]))
+                del dict_of_points['LP'][0]
+        self.dict_of_intervals['PP'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.dict_of_points)
+        list_of_intervals = []
+        for i in range(len(dict_of_points['LP'])):
+            if len(dict_of_points['Q']) > 0 and len(dict_of_points['LP']) > 0:
+                if len(dict_of_points['Q']) > 1:
+                    if abs(dict_of_points['LP'][0][0]-dict_of_points['Q'][1][0]) < \
+                            abs(dict_of_points['LP'][0][0]-dict_of_points['Q'][0][0]):
+                        del dict_of_points['Q'][0]
+                list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['Q'][0][0]))
+                del dict_of_points['LP'][0]
+                del dict_of_points['Q'][0]
+        self.dict_of_intervals['PQ'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.dict_of_points)
+        list_of_intervals = []
+        for i in range(len(dict_of_points['Q'])):
+            if len(dict_of_points['RT']) > 0 and len(dict_of_points['Q']) > 0:
+                if len(dict_of_points['RT']) > 1:
+                    if abs(dict_of_points['Q'][0][0]-dict_of_points['RT'][1][0]) < \
+                            abs(dict_of_points['Q'][0][0]-dict_of_points['RT'][0][0]):
+                        del dict_of_points['RT'][0]
+                list_of_intervals.append(abs(dict_of_points['Q'][0][0]-dict_of_points['RT'][0][0]))
+                del dict_of_points['Q'][0]
+                del dict_of_points['RT'][0]
+        self.dict_of_intervals['PQ'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.dict_of_points)
+        list_of_intervals = []
+        for i in range(len(dict_of_points['Q'])):
+            if len(dict_of_points['RS']) > 0 and len(dict_of_points['Q']) > 0:
+                if len(dict_of_points['RS']) > 1:
+                    if abs(dict_of_points['Q'][0][0]-dict_of_points['RS'][1][0]) < \
+                            abs(dict_of_points['Q'][0][0]-dict_of_points['RS'][0][0]):
+                        del dict_of_points['RS'][0]
+                list_of_intervals.append(abs(dict_of_points['Q'][0][0]-dict_of_points['RS'][0][0]))
+                del dict_of_points['Q'][0]
+                del dict_of_points['RS'][0]
+        self.dict_of_intervals['QRS'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.dict_of_points)
+        list_of_intervals = []
+        for i in range(len(dict_of_points['Q'])):
+            if len(dict_of_points['R']) > 0 and len(dict_of_points['Q']) > 0:
+                if len(dict_of_points['R']) > 1:
+                    if abs(dict_of_points['Q'][0][0]-dict_of_points['R'][1][0]) < \
+                            abs(dict_of_points['Q'][0][0]-dict_of_points['R'][0][0]):
+                        del dict_of_points['R'][0]
+                list_of_intervals.append(abs(dict_of_points['Q'][0][0]-dict_of_points['R'][0][0]))
+                del dict_of_points['Q'][0]
+                del dict_of_points['R'][0]
+        self.dict_of_intervals['QR'] = list_of_intervals
 
     def show_result(self):
         """
