@@ -3,6 +3,7 @@ import numpy as np
 import math
 import re
 import os
+import copy
 
 
 class Graphic:
@@ -13,9 +14,16 @@ class Graphic:
         :param speed: Скорость записи ЭКГ. Обычно 25 или 50 мм/с
         """
         # Параметры изображения
+        self.dict_of_points = {}
+        self.dict_of_intervals = {}
+        self.speed_of_ecg = speed
+
         self.__image_full_name = image_full_name
         self.__image_name = re.split(r'\.', self.__image_full_name)[0]
-        self.dict_of_points = {}
+        if re.split(r'\.', self.__image_full_name)[1] != 'jpeg':  # Если исходный файл не в формате jpeg, то его сразу
+            # конвертируют
+            self.convert_to_jpeg()
+
         self.__length_of_square = None
         self.__all_extremes = None
         self.__all_points = None
@@ -24,17 +32,33 @@ class Graphic:
         self.__qua_of_big_squares = None
         self.__time_of_rs = None
         self.__length_of_rs = None
-        self.speed_of_ecg = speed
         self.characteristics = []  # В этот список будем записывать все характеристики, такие как все интервалы и ЧСС
         # Когда нам точно станут известным все характеристики, какие интервалы нам нужны, то заменим список np.array
         # И все обращения к нему стоит переделать с .append, к поэлементному обращению
 
     def graph_detection(self):
+        """Main-функция.
+
+        Запускаешь её и автоматически определяются все необходимые величины.
+        """
         self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)), False)
         self.__get_dictionary_of_key_points()
         self.__set_points_for_intervals()
         self.__find_square_length()
         self.__is_r_distance_equal()
+        self.__get_intervals()
+
+    def __get_intervals(self):
+        """Ищет все интервалы
+        """
+        dict_of_points = copy.copy(self.dict_of_points)
+
+        list_of_tp = []
+        for i in range(len(dict_of_points['LP'])):
+            list_of_tp.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
+            del dict_of_points['LP'][0]
+            del dict_of_points['RT'][0]
+        self.dict_of_intervals['TP'] = list_of_tp
 
     def show_result(self):
         """
@@ -293,7 +317,6 @@ class Graphic:
         Можно заметить, что растояние у точек R до соседних изломов больше чем у большенства.
         А так же они обычно выше остальных.
         На этом основана следующая сортировка
-        __________________________________________
 
         :param is_show: показывать результат или нет
         :return: r_points - список точек R (x, y)
@@ -462,7 +485,7 @@ class Graphic:
 
                 points.sort(key=lambda x: x[1])
                 average_dist += points[0][0] - points_r[i][0]   # то на сколько точка Т удалена от R
-                points_t.append(points[0])
+                points_t.append(points[0][:2])
             else:   # работет при обработке диапозона после последней точки R.
                 # Тут-то и нужны average_dist и average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
@@ -472,7 +495,7 @@ class Graphic:
                 points.sort(key=lambda x: x[1])
                 dist = points[0][0] - points_r[i][0]
                 if average_dist * 0.75 < dist < average_dist * 1.25:
-                    points_t.append(points[0])   # нужно, чтоб последняя точка не выбивалось от большенства
+                    points_t.append(points[0][:2])   # нужно, чтоб последняя точка не выбивалось от большенства
         return points_t
 
     def __get_and_find_points_p(self, points_r):
@@ -500,7 +523,7 @@ class Graphic:
 
                 points.sort(key=lambda x: x[1])
                 average_dist += points_r[i][0] - points[0][0]   # то на сколько точка Р удалена от R
-                points_p.append(points[0])
+                points_p.append(points[0][:2])
             else:   # работет при обработке диапозона перед первой точкой R. Тут-то и нужны average_dist и
                 # average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
@@ -510,7 +533,7 @@ class Graphic:
                 points.sort(key=lambda x: x[1])
                 dist = points_r[i][0] - points[0][0]
                 if average_dist * 0.75 < dist < average_dist * 1.25:
-                    points_p.append(points[0])   # нужно, чтоб самая первая точка не выбивалось от большенства
+                    points_p.append(points[0][:2])   # нужно, чтоб самая первая точка не выбивалось от большенства
         return points_p
 
     def __get_dictionary_of_key_points(self, is_show=False):
@@ -665,6 +688,8 @@ class Graphic:
                 height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
 
                 all_points_b.append((point_b[0], point_b[1], height))
+            if len(all_points_b) == 0:
+                continue
             point_rs = max(all_points_b, key=lambda x: x[2])[:2]
             all_points_rs.append(point_rs)
 
@@ -689,6 +714,8 @@ class Graphic:
                 height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
 
                 all_points_b.append((point_b[0], point_b[1], height))
+            if len(all_points_b) == 0:
+                continue
             point_lt = max(all_points_b, key=lambda x: x[2])[:2]
             all_points_lt.append(point_lt)
             # ▼ визуализация ▼
