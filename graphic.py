@@ -15,43 +15,60 @@ class Graphic:
         # Параметры изображения
         self.__image_full_name = image_full_name
         self.__image_name = re.split(r'\.', self.__image_full_name)[0]
-        self.__dict_of_points = None
+        self.dict_of_points = {}
         self.__length_of_square = None
         self.__all_extremes = None
         self.__all_points = None
-        self.__speed_of_ecg = speed
+        self.__img_otsus_method = None
+        self.__is_equal = None
+        self.__qua_of_big_squares = None
+        self.__time_of_rs = None
+        self.__length_of_rs = None
+        self.speed_of_ecg = speed
         self.characteristics = []  # В этот список будем записывать все характеристики, такие как все интервалы и ЧСС
         # Когда нам точно станут известным все характеристики, какие интервалы нам нужны, то заменим список np.array
         # И все обращения к нему стоит переделать с .append, к поэлементному обращению
 
-    def __delete_background(self, is_show=True):
-        """Удаление фона(костыль)
+    def graph_detection(self):
+        self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)), False)
+        self.__get_dictionary_of_key_points()
+        self.__set_points_for_intervals()
+        self.__find_square_length()
+        self.__is_r_distance_equal()
 
-        Данная функция находит график кардиограммы и делает его белым цветом, а фон - чёрным
-        Есть минус - она не универсальна и вряд ли заработает для других изображений
-
-        :param is_show: is_show
-        :return: ч/б изобрежение без фона
+    def show_result(self):
         """
-        hsv_min = np.array((0, 0, 0), np.uint8)  # Минимальный порог цвета
-        hsv_max = np.array((240, 255, 120), np.uint8)  # Максимальный порог цвета
+        Только отображает
+        :return: None
+        """
+        wight = self.__img_otsus_method.shape[0]
+        height = self.__img_otsus_method.shape[1]
+        img = np.zeros((wight, height, 3), np.uint8)
+        colors = {'R': (255, 0, 255),   # цвета
+                  'Q': (0, 200, 255),
+                  'S': (0, 255, 193),
+                  'T': (255, 214, 145),
+                  'P': (92, 0, 255)}
+        last_point = self.__all_points[0]
+        for point in self.__all_points[1::]:
+            cv.line(img, last_point[:2], point[:2], (255, 255, 255), 1)
+            if point[2] == 1:
+                cv.circle(img, point[:2], 3, (0, 255, 0), -1)
+            elif point[2] == 2:
+                cv.circle(img, point[:2], 1, (50, 50, 200), -1)
+            last_point = point
+        for type in self.dict_of_points:
+            if type in colors:
+                color = colors[type]
+            else:
+                color = (255, 255, 255)
+            for point in self.dict_of_points[type]:
+                cv.circle(img, point[:2], 4, color, -1)
+        cv.imwrite(f'result.jpg', img)
+        cv.imshow("Image", img)
+        cv.waitKey(0)
 
-        img = cv.imread(f'images/{self.__image_name}.jpeg')  # Чтение изображения
-        if is_show:
-            cv.imshow('Original', img)  # Показывает изображение
-
-        img_in_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Перевод изображения из цветовой палитры RGB
-        # (порядок изнальчно изменён, BGR) в палитру HSV
-        img_with_hsv_filter = cv.inRange(img_in_hsv, hsv_min, hsv_max)  # Применяет к изобрежнию фильтр
-
-        if is_show:
-            cv.imshow('Filtered', img_with_hsv_filter)  # Показывает обработанное изображение
-            cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}_w-b.jpeg', img_with_hsv_filter)  # Сохраняет новое изображение
-
-        return img_with_hsv_filter
-
-    def __otsus_method(self, is_show=True):
+    def __otsus_method(self, is_show=False):
         """Удаление фона
 
         Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
@@ -72,9 +89,10 @@ class Graphic:
             cv.waitKey(0)
         cv.imwrite(f'images/{self.__image_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
 
+        self.__img_otsus_method = img_with_filter
         return img_with_filter
 
-    def __find_square_length(self, is_show=True):
+    def __find_square_length(self, is_show=False):
         """Ищет на картинки клеточки и определяет, сколько 1 клеточка занимает пикселей.
 
         Суть работы
@@ -93,7 +111,7 @@ class Graphic:
             cv.waitKey(0)
 
         # График ЭКГ
-        graphic = self.__otsus_method(False)
+        graphic = self.__img_otsus_method
         if is_show:
             cv.imshow("Graphic", graphic)
             cv.waitKey(0)
@@ -171,7 +189,7 @@ class Graphic:
         """
         self.__length_of_square = average_length
 
-    def crop_image(self, n, is_show=True):
+    def crop_image(self, n, is_show=False):
         """Обрезает изображение сверху и снизу на n пиксель
 
         :param n: число пикселей, на которое изображение обрежется
@@ -207,7 +225,7 @@ class Graphic:
         img_list = np.where(img > 0, 1, 0)
         return img_list
 
-    def __find_extremes_and_points(self, array, is_show=True):
+    def __find_extremes_and_points(self, array, is_show=False):
         """Ищет экстремумы на графике и может их затем продемонстрировать.
 
         :param array: изображение, прошедшие удаление заднего фона и переведённое в нолики и единички
@@ -263,25 +281,11 @@ class Graphic:
 
         last_points.append((array.shape[1], average_y, 2))  # сохраняет последний столбец, чтоб не было обрыва
 
-        img = np.zeros((array.shape[0], array.shape[1], 3), np.uint8)   # просто отображение результата (не обязательно)
-        last = last_points[0][:-1]
-        for point in last_points:
-            cv.line(img, last, point[:-1], (255, 255, 255), 1)
-            if point[2] == 1:
-                cv.circle(img, point[:-1], 3, (0, 255, 0), -1)
-            elif point[2] == 2:
-                cv.circle(img, point[:-1], 1, (0, 0, 255), -1)
-            last = point[:-1]
-        cv.imwrite(f'result.jpeg', img)
-        if is_show:
-            cv.imshow("Image", img)
-            cv.waitKey(0)
-
+        last_points.sort(key=lambda x: x[0])
         self.__all_points = last_points
-
         self.__all_extremes = list(filter(lambda x: x[2] == 1, self.__all_points))
 
-    def __get_and_find_points_r(self, is_show=True):  # многоуровневая сортировка (выведение точек R)
+    def __get_and_find_points_r(self, is_show=False):  # многоуровневая сортировка (выведение точек R)
         """Находит все точки R.
 
         Суть работы
@@ -296,7 +300,7 @@ class Graphic:
         """
         # Проверка на наличие экстремумов в параметрах класса и поиск, в противном случае
         if self.__all_extremes is None:
-            self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)), False)
+            self.graph_detection()
 
         average_length = 0  # среднее растояние между каждой точкой излома (экстркмум)
         average_y = 0  # для поиска средней высоты
@@ -509,7 +513,7 @@ class Graphic:
                     points_p.append(points[0])   # нужно, чтоб самая первая точка не выбивалось от большенства
         return points_p
 
-    def get_dictionary_of_key_points(self, is_show=True):
+    def __get_dictionary_of_key_points(self, is_show=False):
         """
         Функция, которая объеденяет все операции по вычислению ключевых точек.
 
@@ -526,7 +530,7 @@ class Graphic:
 
         # Проверка на наличие всех точек в параметрах класса и их поиск, в противном случае
         if self.__all_points is None:
-            self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)), False)
+            self.graph_detection()
 
         all_extremes = list(filter(lambda x: x[2] == 1, self.__all_points))   # выделяет из все точек только экстремумы
         all_points_r = self.__get_and_find_points_r(False)   # точки R
@@ -536,6 +540,7 @@ class Graphic:
         points_q, points_s = self.__get_and_find_points_q_and_s(all_points_r)   # точки Q и S
         points_t = self.__get_and_find_points_t(all_points_r)   # точки T
         points_p = self.__get_and_find_points_p(all_points_r)   # точки P
+        points_p.sort(key=lambda x: x[0])
 
         key_points['R'] = all_points_r
         key_points['Q'] = points_q
@@ -553,9 +558,157 @@ class Graphic:
             cv.imshow("Image", img)
             cv.waitKey(0)
 
-        self.__dict_of_points = key_points
+        self.dict_of_points = key_points
 
         return key_points
+
+    def __defining_intervals_t_p(self):
+        """
+        Находит точки для интервала между T и P
+        :return: True если всё хорошо
+        """
+        img = cv.imread(f'result.jpg')
+        all_points_rt = []  # правее R
+        all_points_lp = []  # левее P
+        for point_t in self.dict_of_points['T']:
+            point_p = self.dict_of_points['P'][-1]  # определение ближайших точек P и Q
+            for point in self.dict_of_points['P']:
+                if point[0] < point_t[0]:
+                    continue
+                if point[0] < point_p[0]:
+                    point_p = point
+            point_q = self.dict_of_points['Q'][-1]
+            for point in self.dict_of_points['Q']:
+                if point[0] < point_t[0]:
+                    continue
+                if point[0] < point_q[0]:
+                    point_q = point
+
+            # выбирает все точки из промежутка между T и P
+            all_extremes = list(filter(lambda x: x[0] > point_t[0] and x[0] <= point_p[0], self.__all_points))
+            length_tq = ((point_t[0] - point_q[0]) ** 2 + (point_t[1] - point_q[1]) ** 2) ** 0.5  # теорема Пифагора
+            if len(all_extremes) < 1:
+                continue
+            all_points_b = []
+            for i in range(len(all_extremes) - 1):
+                if all_extremes[i][0] > (abs(point_t[0] - point_p[0]) // 2) + point_t[0]:
+                    break
+                point_b = all_extremes[i]
+                length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+                length_qb = ((point_q[0] - point_b[0]) ** 2 + (point_q[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+
+                # теорема косинусов для определения угла отклонения
+                angle = math.acos((length_qb ** 2 + length_tq ** 2 - length_tb ** 2) / (2 * length_qb * length_tq))
+                # небольшой коофицент погрешности для более точного определения
+                angle -= ((abs(point_b[0] - point_t[0]) / (abs(point_t[0] - point_p[0]) // 10)) * 0.03)
+
+                all_points_b.append((point_b[0], point_b[1], angle))
+            point_after_t = max(all_points_b, key=lambda x: x[2])[:2]
+            all_points_rt.append(point_after_t)
+
+            all_points_b = []  # всё тоже самое, но для другой точки
+            length_tr_p = ((point_p[0] - point_after_t[0]) ** 2 + (point_p[1] - point_after_t[1]) ** 2) ** 0.5
+            for i in range(len(all_extremes) - 1):
+                if all_extremes[i][0] < (abs(point_t[0] - point_p[0]) // 2) + point_t[0]:
+                    continue
+                point_b = all_extremes[i]
+                length_tr_b = ((point_b[0] - point_after_t[0]) ** 2 + (point_b[1] - point_after_t[1]) ** 2) ** 0.5
+                length_p_b = ((point_b[0] - point_p[0]) ** 2 + (point_b[1] - point_p[1]) ** 2) ** 0.5
+                # теорема косинусов для определения угла отклонени я
+                angle = math.acos(
+                    (length_tr_p ** 2 + length_tr_b ** 2 - length_p_b ** 2) / (2 * length_tr_p * length_tr_b))
+                # небольшой коофицент погрешности для более точного определения
+                angle += ((abs(point_b[0] - point_t[0]) / (abs(point_t[0] - point_p[0]) // 10)) * 0.03)
+                all_points_b.append((point_b[0], point_b[1], angle))
+            point_before_p = max(all_points_b, key=lambda x: x[2])[:2]
+            all_points_lp.append(point_before_p)
+            # ▼ визуализация ▼
+            cv.circle(img, point_after_t[:2], 4, (255, 255, 255), -1)
+            cv.circle(img, point_before_p[:2], 4, (255, 255, 255), -1)
+
+        self.dict_of_points['RT'] = all_points_rt
+        self.dict_of_points['LP'] = all_points_lp
+        return True
+
+    def __defining_intervals_s_t(self):
+        """
+        Находит точки для интервала между S и T
+        :return: True если всё хорошо
+        """
+        img = cv.imread(f'result.jpg')
+        all_points_lt = []  # левее Т
+        all_points_rs = []  # правее S
+        for point_s in self.dict_of_points['S']:
+            point_t = self.dict_of_points['T'][-1]
+            for point in self.dict_of_points['T']:
+                if point[0] < point_s[0]:
+                    continue
+                if point[0] < point_t[0]:
+                    point_t = point
+
+            # выбирает все точки из промежутка между S и T
+            all_extremes = list(filter(lambda x: x[0] > point_s[0] and x[0] <= point_t[0], self.__all_points))
+            if len(all_extremes) < 1:
+                continue
+            length_st = ((point_t[0] - point_s[0]) ** 2 + (point_t[1] - point_s[1]) ** 2) ** 0.5  # теорема Пифагора
+            all_points_b = []
+            for i in range(len(all_extremes) - 1):
+                if all_extremes[i][0] > (abs(point_t[0] - point_s[0]) // 2) + point_s[0]:
+                    break
+                point_b = all_extremes[i]
+                length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+                length_bs = ((point_s[0] - point_b[0]) ** 2 + (point_s[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+                # теорема косинусов для определения угла отклонения
+                angle = math.acos((length_bs ** 2 + length_st ** 2 - length_tb ** 2) / (2 * length_bs * length_st))
+                height = length_bs * math.sin(angle)
+                # небольшой коофицент погрешности для более точного определения
+                height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
+
+                all_points_b.append((point_b[0], point_b[1], height))
+            point_rs = max(all_points_b, key=lambda x: x[2])[:2]
+            all_points_rs.append(point_rs)
+
+            length_rs_t = ((point_t[0] - point_rs[0]) ** 2 + (point_t[1] - point_rs[1]) ** 2) ** 0.5  # теорема Пифагора
+            all_points_b = []
+            for i in range(len(all_extremes) - 1):
+                if all_extremes[i][0] > (abs(point_t[0] - point_s[0]) / 3) * 2 + point_s[0]:
+                    break
+                if all_extremes[i][0] <= point_rs[0]:
+                    continue
+                point_b = all_extremes[i]
+                length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+                length_b_rs = ((point_rs[0] - point_b[0]) ** 2 + (
+                            point_rs[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+                if length_tb + length_b_rs <= length_rs_t:  # основное свойства существования треуголька
+                    continue
+                # теорема косинусов для определения угла отклонения и высоты относительно RS-T
+                angle = math.acos(
+                    (length_b_rs ** 2 + length_rs_t ** 2 - length_tb ** 2) / (2 * length_b_rs * length_rs_t))
+                height = length_b_rs * math.sin(angle)
+                # небольшой коофицент погрешности для более точного определения
+                height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
+
+                all_points_b.append((point_b[0], point_b[1], height))
+            point_lt = max(all_points_b, key=lambda x: x[2])[:2]
+            all_points_lt.append(point_lt)
+            # ▼ визуализация ▼
+            cv.circle(img, point_rs[:2], 4, (255, 255, 255), -1)
+            cv.circle(img, point_lt[:2], 4, (255, 255, 255), -1)
+
+        self.dict_of_points['LT'] = all_points_lt
+        self.dict_of_points['RS'] = all_points_rs
+        return True
+
+    def __set_points_for_intervals(self):
+        """
+        Добавляет в основной словарь с ключевыми точками новые.
+        Это просто объединение всех функций по определению каких-то определённых точек
+
+        :return: None
+        """
+
+        self.__defining_intervals_t_p()
+        self.__defining_intervals_s_t()
 
     def __is_r_distance_equal(self):
         """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R и возвращает время в секундах.
@@ -563,11 +716,11 @@ class Graphic:
         :return: Возвращает список, где равное ли расстояние между R, количество больших клеточек между ними и время
         в сек.
         """
-        self.__dict_of_points['R'].sort()  # Сортируется входной список R
+        self.dict_of_points['R'].sort()  # Сортируется входной список R
         is_equal = True  # Переменная, отвечающая за результат
         list_of_distance = []  # Список расстояний между вершинами
-        for i in range(len(self.__dict_of_points['R']) - 1):  # Вычислений расстояний между вершинами
-            list_of_distance.append(self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0])
+        for i in range(len(self.dict_of_points['R']) - 1):  # Вычислений расстояний между вершинами
+            list_of_distance.append(self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0])
 
         average_distance = list_of_distance[0]  # Среднее растояние между вершинами R (сразу присваивается
         # нулевой элемент),
@@ -596,29 +749,35 @@ class Graphic:
         # путём обощения маленьких контуров в большую клетку
         if qua_of_big_squares < 6:
             length_of_rs = qua_of_big_squares*5  # расстояние между вершинами R в мм
-            if self.__speed_of_ecg == 25:
+            if self.speed_of_ecg == 25:
                 time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной большой клеточки - 0.5 см или 0,2 секунды
             else:
                 time_of_rs = round(time_of_rs * 0.1, 2)  # Размер одной большой клеточки - 0.5 см или 0,1 секунды
         else:
             length_of_rs = qua_of_big_squares  # расстояние между вершинами R в мм
             qua_of_big_squares /= 5
-            if self.__speed_of_ecg == 25:
+            if self.speed_of_ecg == 25:
                 time_of_rs = round(time_of_rs * 0.04, 2)  # Размер одной маленькой клеточки - 0,1 см или 0,04 секунды
             else:
                 time_of_rs = round(time_of_rs * 0.1, 2)  # Размер одной одной маленькой клеточки - 0,1 см
                 # или 0,02 секунды
-
+        
+        self.__is_equal = is_equal
+        self.__qua_of_big_squares = qua_of_big_squares
+        self.__time_of_rs = time_of_rs
+        self.__length_of_rs = length_of_rs
         return [is_equal, qua_of_big_squares, time_of_rs, length_of_rs]
 
     def find_heart_rate(self):
         """Ищет ЧСС
 
         """
-        self.characteristics.append(round(60/(self.__is_r_distance_equal()[3]*0.0016*self.__speed_of_ecg), 2))
+        self.characteristics.append(round(60 / (self.__length_of_rs * 0.0016 * self.speed_of_ecg), 2))
 
 
 graphic = Graphic('ECG-1.jpeg', 25)
-graphic.get_dictionary_of_key_points(False)
+graphic.graph_detection()
 graphic.find_heart_rate()
 print(graphic.characteristics)
+
+graphic.show_result()
