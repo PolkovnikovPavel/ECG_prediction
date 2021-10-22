@@ -4,6 +4,9 @@ import math
 import re
 import os
 import copy
+"""
+Файл для получения всех данных (точек, интервалов)
+"""
 
 
 class Graphic:
@@ -17,6 +20,7 @@ class Graphic:
         self.dict_of_points = {}
         self.dict_of_intervals = {}
         self.speed_of_ecg = speed
+        self.is_equal = None
 
         self.__image_full_name = image_full_name
         self.__image_name = re.split(r'\.', self.__image_full_name)[0]
@@ -28,7 +32,6 @@ class Graphic:
         self.__all_extremes = None
         self.__all_points = None
         self.__img_otsus_method = None
-        self.__is_equal = None
         self.__qua_of_big_squares = None
         self.__time_of_rs = None
         self.__length_of_rs = None
@@ -47,6 +50,7 @@ class Graphic:
         self.__find_square_length()
         self.__is_r_distance_equal()
         self.__get_intervals()
+        self.find_heart_rate()
 
     def __get_intervals(self):
         """Ищет все интервалы
@@ -858,7 +862,7 @@ class Graphic:
                 time_of_rs = round(time_of_rs * 0.1, 2)  # Размер одной одной маленькой клеточки - 0,1 см
                 # или 0,02 секунды
         
-        self.__is_equal = is_equal
+        self.is_equal = is_equal
         self.__qua_of_big_squares = qua_of_big_squares
         self.__time_of_rs = time_of_rs
         self.__length_of_rs = length_of_rs
@@ -869,11 +873,3 @@ class Graphic:
 
         """
         self.characteristics.append(round(60 / (self.__length_of_rs * 0.0016 * self.speed_of_ecg), 2))
-
-
-graphic = Graphic('ECG-1.jpeg', 25)
-graphic.graph_detection()
-graphic.find_heart_rate()
-print(graphic.characteristics)
-
-graphic.show_result()
