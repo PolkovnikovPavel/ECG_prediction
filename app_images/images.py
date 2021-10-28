@@ -4,7 +4,10 @@ from data.functions import *
 
 def get_image(name, w, h, mode=0):
     size = (w, h)
-    img = Image.open(f'app_images/{name}')
+    if ':/' not in name:
+        img = Image.open(f'app_images/{name}')
+    else:
+        img = Image.open(name)
     img = img.resize(size, Image.ANTIALIAS)
 
     if mode == 1:

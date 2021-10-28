@@ -3,7 +3,7 @@ from graphic import Graphic
 Файл для анализа данных
 """
 
-gr = Graphic('Tachycardia_ECG.jpeg', 25)  # Bradycardia_ECG.jpeg
+gr = Graphic('images/Tachycardia_ECG.jpeg', 25)  # Bradycardia_ECG.jpeg
 gr.graph_detection()
 
 result = ''

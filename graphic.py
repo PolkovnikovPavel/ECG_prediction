@@ -22,11 +22,11 @@ class Graphic:
         self.speed_of_ecg = speed
         self.is_equal = None
 
-        self.__image_full_name = image_full_name
-        self.__image_name = re.split(r'\.', self.__image_full_name)[0]
-        if re.split(r'\.', self.__image_full_name)[1] != 'jpeg':  # Если исходный файл не в формате jpeg, то его сразу
-            # конвертируют
-            self.convert_to_jpeg()
+        self.image_full_name = image_full_name
+        self.__image_name = re.split(r'\.', self.image_full_name)[0]
+        # if re.split(r'\.', self.image_full_name)[1] != 'jpeg':  # Если исходный файл не в формате jpeg, то его сразу
+        #     # конвертируют
+        #     self.convert_to_jpeg()
 
         self.__length_of_square = None
         self.__all_extremes = None
@@ -48,7 +48,6 @@ class Graphic:
         self.__get_dictionary_of_key_points()
         self.__set_points_for_intervals()
         self.__find_square_length()
-        self.__is_r_distance_equal()
         self.__get_intervals()
         self.find_heart_rate()
 
@@ -133,7 +132,7 @@ class Graphic:
                 del dict_of_points['R'][0]
         self.dict_of_intervals['QR'] = list_of_intervals
 
-    def show_result(self):
+    def show_result(self, path_to_save='result.jpg'):
         """
         Только отображает
         :return: None
@@ -161,11 +160,42 @@ class Graphic:
                 color = (255, 255, 255)
             for point in self.dict_of_points[type]:
                 cv.circle(img, point[:2], 4, color, -1)
-        cv.imwrite(f'result.jpg', img)
+        cv.imwrite(path_to_save, img)
         cv.imshow("Image", img)
         cv.waitKey(0)
 
-    def __otsus_method(self, is_show=False):
+    def save_result(self, path='result.jpg', is_key_points=True):
+        """
+        Только сохраняет
+        :return: None
+        """
+        wight = self.__img_otsus_method.shape[0]
+        height = self.__img_otsus_method.shape[1]
+        img = np.zeros((wight, height, 3), np.uint8)
+        colors = {'R': (255, 0, 255),  # цвета
+                  'Q': (0, 200, 255),
+                  'S': (0, 255, 193),
+                  'T': (255, 214, 145),
+                  'P': (92, 0, 255)}
+        last_point = self.__all_points[0]
+        for point in self.__all_points[1::]:
+            cv.line(img, last_point[:2], point[:2], (255, 255, 255), 1)
+            if point[2] == 1:
+                cv.circle(img, point[:2], 3, (0, 255, 0), -1)
+            elif point[2] == 2:
+                cv.circle(img, point[:2], 1, (50, 50, 200), -1)
+            last_point = point
+        if is_key_points:
+            for type in self.dict_of_points:
+                if type in colors:
+                    color = colors[type]
+                else:
+                    color = (255, 255, 255)
+                for point in self.dict_of_points[type]:
+                    cv.circle(img, point[:2], 4, color, -1)
+        cv.imwrite(path, img)
+
+    def __otsus_method(self, is_show=False, path_to_file=None):
         """Удаление фона
 
         Метод Оцу, который автоматически подбирает порог цвета и удаляет фон
@@ -173,7 +203,10 @@ class Graphic:
         :param is_show: is_show
         :return: ч/б изображение без заднего фона (только график ЭКГ)
         """
-        img = cv.imread(f'images/{self.__image_name}.jpeg')  # Чтение изображения
+        if path_to_file is None:
+            img = cv.imread(self.image_full_name)  # Чтение изображения
+        else:
+            img = cv.imread(path_to_file)
         if is_show:
             cv.imshow("Original", img)  # Показ изображения
 
@@ -184,7 +217,7 @@ class Graphic:
         if is_show:
             cv.imshow("Filtered", img_with_filter)  # Показ изображения
             cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
+        cv.imwrite(f'images/temp-Otsus.jpeg', img_with_filter)  # Сохранение изображения
 
         self.__img_otsus_method = img_with_filter
         return img_with_filter
@@ -202,7 +235,7 @@ class Graphic:
         :param is_show: is_show
         """
         # Исходное изображение
-        img = cv.imread(f'images/{self.__image_name}.jpeg', cv.IMREAD_GRAYSCALE)
+        img = cv.imread(self.image_full_name, cv.IMREAD_GRAYSCALE)
         if is_show:
             cv.imshow("Original", img)
             cv.waitKey(0)
@@ -223,15 +256,11 @@ class Graphic:
         if is_show:
             cv.imshow('result', blur_img)
             cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}_w-o_graphic.jpeg', blur_img)
-
-        variable = self.__image_name  # Необходимость для сохранения исходного имя файла
-        self.__image_name = self.__image_name + '_w-o_graphic'
+        cv.imwrite('images/temp_w-o_graphic.jpeg', blur_img)
 
         # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
-        img_with_out_graphic_otsus = self.__otsus_method(False)
+        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file='images/temp_w-o_graphic.jpeg')
 
-        self.__image_name = variable  # Возвращает исходное имя файла
 
         # Выделяем контуры клеточек
         (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
@@ -293,24 +322,23 @@ class Graphic:
         :param is_show: is_show
         :return: обрезанное изображение
         """
-        img = cv.imread(f'images/{self.__image_name}.jpeg')
+        img = cv.imread(self.image_full_name)
         y0 = n
         y1 = img.shape[0] - n
         crop_img = img[y0:y1]
         if is_show:
             cv.imshow('cropped', crop_img)
             cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}.jpeg', crop_img)
 
         return crop_img
 
-    def convert_to_jpeg(self):
-        """Переводит выбранный файл в формат .jpeg и удаляет исходный
-        """
-        img = cv.imread(f'images/{self.__image_full_name}')
-        img_name = re.split(r'\.', self.__image_full_name)[0]
-        cv.imwrite(f'images/{img_name}.jpeg', img)
-        os.remove(f'images/{self.__image_full_name}')
+    # def convert_to_jpeg(self):
+    #     """Переводит выбранный файл в формат .jpeg и удаляет исходный
+    #     """
+    #     img = cv.imread(f'images/{self.__image_full_name}')
+    #     img_name = re.split(r'\.', self.__image_full_name)[0]
+    #     cv.imwrite(f'images/{img_name}.jpeg', img)
+    #     os.remove(f'images/{self.__image_full_name}')
 
     @staticmethod
     def __get_digitization_image(img):
@@ -872,4 +900,5 @@ class Graphic:
         """Ищет ЧСС
 
         """
+        self.__is_r_distance_equal()
         self.characteristics.append(round(60 / (self.__length_of_rs * 0.0016 * self.speed_of_ecg), 2))

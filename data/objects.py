@@ -90,14 +90,19 @@ class Object():
             self.create_obj()
 
     def check_point(self, x, y):
-        if x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h:
-            return True
+        if self.mode_coord:
+            if (x >= self.x - (self.w / 2) and x <= self.x + (self.w / 2) and
+                    y >= self.y - (self.h / 2) and y <= self.y + (self.h / 2)):
+                return True
+        else:
+            if x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h:
+                return True
         return False
 
 
 class Button(Object):
-    def __init__(self, x, y, w, h, img, canvas, img2=None, function=None, args=[], visibility=True):
-        Object.__init__(self, x, y, w, h, img, canvas, visibility=visibility)
+    def __init__(self, x, y, w, h, img, canvas, img2=None, function=None, args=[], visibility=True, container=[]):
+        Object.__init__(self, x, y, w, h, img, canvas, visibility=visibility, container=container)
         self.is_clik = False
         if type(img2) == str:
             self.img2 = get_image(img2, w, h)
@@ -220,13 +225,164 @@ class Group():
     def check(self, x, y, is_clik=True):
         if not self.visibility:
             return
-        if is_clik:
-            for object in self.all_objects:
-                if isinstance(object, Button):
-                    object.check(x, y, is_clik)
+        for object in self.all_objects:
+            if isinstance(object, Button) or isinstance(object, ObjectGraphic):
+                object.check(x, y, is_clik)
+
+
+class Point(Object):
+    def __init__(self, x, y, w, h, canvas, type_point='R', point=(0, 0), visibility=True, container=[],
+                 mode_coord=False, graphic=None):
+        self.__names = {'R': 'point_r_image.png',
+                        'Q': 'point_q_image.png',
+                        'S': 'point_s_image.png',
+                        'T': 'point_t_image.png',
+                        'P': 'point_p_image.png'}
+        super().__init__(x, y, w, h, self.__names[type_point], canvas, visibility, container, mode_coord)
+        self.is_moving = False
+        self.type_point = type_point
+        self.point = [point[0], point[1]]
+        self.graphic = graphic
+        self.old_x = x
+        self.old_y = y
+        self.is_hurt_trash = False
+
+
+    def check(self, x, y, is_clik=True, is_taken_one=False):
+        if not self.visibility:
+            return
+
+        if self.is_moving:
+            if is_clik:
+                self.go_to(x, y)
+            else:
+                if self.graphic.trash.check_point(self.x, self.y):
+                    self.graphic.del_point(self)
+                    self.hide()
+                    return
+
+                self.is_moving = False
+                self.go_to(x, y)
+                dx, dy = x - self.old_x, y - self.old_y
+                self.point[0] += dx * (self.graphic.img_w / self.graphic.w)
+                self.point[1] += dy * (self.graphic.img_h / self.graphic.h)
+                self.graphic.scan_graphic()
         else:
-            for object in self.all_objects:
-                if isinstance(object, Button):
-                    object.check(x, y, is_clik)
+            if is_clik:
+                if self.check_point(x, y) and not is_taken_one:
+                    self.is_moving = True
+                    self.old_x = x
+                    self.old_y = y
+
+    def get_cor_point(self):
+        return self.point
+
+
+class ObjectGraphic:
+    def __init__(self, canvas, graphic, path_to_file, x=0, y=0, w=1280, h=600, visibility=True, scan_graphic=None):
+        self.canvas = canvas
+        self.graphic = graphic
+        self.path_to_file = path_to_file
+        self.visibility = visibility
+        self.group = Group()
+        self.adding_group = Group()
+        self.scan_graphic = scan_graphic
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.is_click = False
+        im = Image.open(self.path_to_file)
+        self.img_w, self.img_h = im.size
+        self.dict_of_points = {'R': [],
+                               'Q': [],
+                               'S': [],
+                               'T': [],
+                               'P': []}
+
+        self.create_all_obj()
+
+    def create_all_obj(self):
+        obj = Object(self.x, self.y, self.w, self.h, self.path_to_file, self.canvas)
+        self.group.add_objects(obj)
+        self.trash = Object(0, ph(85), pw(100), ph(15), 'air.png', self.canvas, False)
+        self.group.add_objects(self.trash)
+
+        for key in self.dict_of_points:
+            for point in self.graphic.dict_of_points[key]:
+                x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
+                x, y = x + self.x, y + self.y
+                obj = Point(x, y, ph(4), ph(4), self.canvas, key, point, mode_coord=True, graphic=self)
+                self.group.add_objects(obj)
+                self.dict_of_points[key].append(obj)
+
+        obj = Object(pw(20), ph(87), ph(10), ph(10), 'add_point_p.png', self.canvas, container=['P'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(30), ph(87), ph(10), ph(10), 'add_point_q.png', self.canvas, container=['Q'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(40), ph(87), ph(10), ph(10), 'add_point_r.png', self.canvas, container=['R'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(50), ph(87), ph(10), ph(10), 'add_point_s.png', self.canvas, container=['S'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(60), ph(87), ph(10), ph(10), 'add_point_t.png', self.canvas, container=['T'])
+        self.adding_group.add_objects(obj)
+
+    def del_point(self, point):
+        cor_point = point.point
+        for key in self.dict_of_points:
+            new_list = []
+            for p in self.dict_of_points[key]:
+                if p.point == cor_point:
+                    point.hide()
+                    del point
+                else:
+                    new_list.append(p)
+            self.dict_of_points[key] = new_list
+        self.scan_graphic()
+
+    def show(self):
+        self.visibility = True
+        self.group.show_all()
+        self.adding_group.show_all()
+
+    def hide(self):
+        self.visibility = False
+        self.group.hide_all()
+        self.adding_group.hide_all()
+
+    def check_point(self, x, y):
+        if x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h:
+            return True
+        return False
+
+    def check(self, x, y, is_click=True):
+        if not self.visibility:
+            return
+        is_taken_one = False
+        if is_click:
+            for key in self.dict_of_points:
+                for point in self.dict_of_points[key]:
+                    if point.is_moving:
+                        is_taken_one = True
+                        break
+            if not is_taken_one:
+                for btn in self.adding_group.all_objects:
+                    if btn.check_point(x, y):
+                        type_p = btn.container[0]
+                        px, py = x // (self.w / self.img_w), y // (self.h / self.img_h)
+                        obj = Point(x, y, ph(4), ph(4), self.canvas, type_p, (px, py), mode_coord=True, graphic=self)
+                        obj.is_moving = True
+                        self.dict_of_points[type_p].append(obj)
+                        self.group.add_objects(obj)
+
+        for key in self.dict_of_points:
+            for point in self.dict_of_points[key]:
+                point.check(x, y, is_click, is_taken_one)
+
+        self.is_click = is_click
+
+
+
+
 
 
