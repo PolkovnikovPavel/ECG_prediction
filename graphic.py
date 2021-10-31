@@ -200,21 +200,27 @@ class Graphic:
         :param is_show: is_show
         :return: ч/б изображение без заднего фона (только график ЭКГ)
         """
-        img = cv.imread(f'images/{self.__image_name}.jpeg')  # Чтение изображения
-        if is_show:
-            cv.imshow("Original", img)  # Показ изображения
-
-        gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)  # Преобразование исходного изображения в ч/б
-        blur_img = cv.GaussianBlur(gray_img, (3, 3), 0)  # Размытие изображения для удаления клеточек
-
-        img_with_filter = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)[1]  # Применение фильтра
-        if is_show:
-            cv.imshow("Filtered", img_with_filter)  # Показ изображения
-            cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
-
-        self.__img_otsus_method = img_with_filter
-        return img_with_filter
+        try:
+            img = cv.imread(f'images/{self.__image_name}.jpeg')  # Чтение изображения
+            if img is None:
+                raise GraphicException('Такого файла нет. Проверьте правильность введения имени файла. Otsus_method')
+        except GraphicException as g:
+            print(g)
+        else:
+            if is_show:
+                cv.imshow("Original", img)  # Показ изображения
+    
+            gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)  # Преобразование исходного изображения в ч/б
+            blur_img = cv.GaussianBlur(gray_img, (3, 3), 0)  # Размытие изображения для удаления клеточек
+    
+            img_with_filter = cv.threshold(blur_img, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)[1]  # Применение фильтра
+            if is_show:
+                cv.imshow("Filtered", img_with_filter)  # Показ изображения
+                cv.waitKey(0)
+            cv.imwrite(f'images/{self.__image_name}-Otsus.jpeg', img_with_filter)  # Сохранение изображения
+    
+            self.__img_otsus_method = img_with_filter
+            return img_with_filter
 
     def __find_square_length(self, is_show=False):
         """Ищет на картинки клеточки и определяет, сколько 1 клеточка занимает пикселей.
@@ -229,90 +235,97 @@ class Graphic:
         :param is_show: is_show
         """
         # Исходное изображение
-        img = cv.imread(f'images/{self.__image_name}.jpeg', cv.IMREAD_GRAYSCALE)
-        if is_show:
-            cv.imshow("Original", img)
-            cv.waitKey(0)
-
-        # График ЭКГ
-        graphic = self.__img_otsus_method
-        if is_show:
-            cv.imshow("Graphic", graphic)
-            cv.waitKey(0)
-
-        # Наше исходное изображение, но уже без графика ЭКГ
-        img_with_out_graphic = np.where(graphic == 255, 255, img)
-
-        # Размываем картинку, чтобы убрать шум
-        blur_img = cv.GaussianBlur(img_with_out_graphic, (5, 5), 0)
-
-        # Показываем и сохраняем
-        if is_show:
-            cv.imshow('result', blur_img)
-            cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}_w-o_graphic.jpeg', blur_img)
-
-        variable = self.__image_name  # Необходимость для сохранения исходного имя файла
-        self.__image_name = self.__image_name + '_w-o_graphic'
-
-        # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
-        img_with_out_graphic_otsus = self.__otsus_method(False)
-
-        self.__image_name = variable  # Возвращает исходное имя файла
-
-        # Выделяем контуры клеточек
-        (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
-
-        # Переводим ч/б изображение в BGR
-        cv.cvtColor(img_with_out_graphic, cv.COLOR_GRAY2BGR)
-
-        # Рисуем контуры
-        if is_show:
-            blank_img = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
-            cv.drawContours(blank_img, contours, -1, (255, 0, 0), 1, cv.LINE_AA)
-            cv.imshow('contours', blank_img)
-            cv.waitKey(0)
-
-        # Считаем координаты клеток
-        list_of_squares_coord = []  # Список координат клеточек
-        for i in range(0, len(contours)):
-            x, y, w, h = cv.boundingRect(contours[i])
-            if w > 5 and h > 5:  # Отсеиваем маленькие контуры, убираем шум
-                list_of_squares_coord.append([x, y, x + w, y + h])
-
-        # Считаем, сколько пикселей занимает одна клеточка на оси Х
-        list_of_squares_dis = []  # Список растояний между точками
-        flag = True
-        i = 0
-        # В этом цикле считаем, сколько клеточек по x занимает одна клетка, если это
-        # мусор, то удаляем
-        while flag is True:
-            if i < len(list_of_squares_coord):
-                length = list_of_squares_coord[i][2] - list_of_squares_coord[i][0]
-                if length >= img.shape[1] / 16:  # Если "клеточка" имеет слишком большие размеры, то
-                    # считаем, что это мусор, и удаляем этот контур
-                    list_of_squares_coord.pop(i)
-                    continue
-                else:
-                    i += 1
-                    list_of_squares_dis.append(length)
-
-            else:
-                flag = False
-
-        average_length = 0  # Средняя длина клеточки
-        # Считаем среднюю длину клетки
-        for i in list_of_squares_dis:
-            average_length += i
-        average_length = average_length / len(list_of_squares_dis)
-
-        self.__length_of_square = average_length
-
-        # Проверка на то, большие клеточки распознал алгоритм, или маленькие
-        if blur_img.shape[0]/average_length > 15:
-            self.__are_squares_big = False
+        try:
+            img = cv.imread(f'images/{self.__image_name}.jpeg', cv.IMREAD_GRAYSCALE)
+            if img is None:
+                raise GraphicException('Такого файла нет. Проверьте корректность введения имени файла. '
+                                       'find_square_length')
+        except GraphicException as g:
+            print(g)
         else:
-            self.__are_squares_big = True
+            if is_show:
+                cv.imshow("Original", img)
+                cv.waitKey(0)
+    
+            # График ЭКГ
+            graphic = self.__img_otsus_method
+            if is_show:
+                cv.imshow("Graphic", graphic)
+                cv.waitKey(0)
+    
+            # Наше исходное изображение, но уже без графика ЭКГ
+            img_with_out_graphic = np.where(graphic == 255, 255, img)
+    
+            # Размываем картинку, чтобы убрать шум
+            blur_img = cv.GaussianBlur(img_with_out_graphic, (5, 5), 0)
+    
+            # Показываем и сохраняем
+            if is_show:
+                cv.imshow('result', blur_img)
+                cv.waitKey(0)
+            cv.imwrite(f'images/{self.__image_name}_w-o_graphic.jpeg', blur_img)
+    
+            variable = self.__image_name  # Необходимость для сохранения исходного имя файла
+            self.__image_name = self.__image_name + '_w-o_graphic'
+    
+            # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
+            img_with_out_graphic_otsus = self.__otsus_method(False)
+    
+            self.__image_name = variable  # Возвращает исходное имя файла
+    
+            # Выделяем контуры клеточек
+            (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
+    
+            # Переводим ч/б изображение в BGR
+            cv.cvtColor(img_with_out_graphic, cv.COLOR_GRAY2BGR)
+    
+            # Рисуем контуры
+            if is_show:
+                blank_img = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
+                cv.drawContours(blank_img, contours, -1, (255, 0, 0), 1, cv.LINE_AA)
+                cv.imshow('contours', blank_img)
+                cv.waitKey(0)
+    
+            # Считаем координаты клеток
+            list_of_squares_coord = []  # Список координат клеточек
+            for i in range(0, len(contours)):
+                x, y, w, h = cv.boundingRect(contours[i])
+                if w > 5 and h > 5:  # Отсеиваем маленькие контуры, убираем шум
+                    list_of_squares_coord.append([x, y, x + w, y + h])
+    
+            # Считаем, сколько пикселей занимает одна клеточка на оси Х
+            list_of_squares_dis = []  # Список растояний между точками
+            flag = True
+            i = 0
+            # В этом цикле считаем, сколько клеточек по x занимает одна клетка, если это
+            # мусор, то удаляем
+            while flag is True:
+                if i < len(list_of_squares_coord):
+                    length = list_of_squares_coord[i][2] - list_of_squares_coord[i][0]
+                    if length >= img.shape[1] / 16:  # Если "клеточка" имеет слишком большие размеры, то
+                        # считаем, что это мусор, и удаляем этот контур
+                        list_of_squares_coord.pop(i)
+                        continue
+                    else:
+                        i += 1
+                        list_of_squares_dis.append(length)
+    
+                else:
+                    flag = False
+    
+            average_length = 0  # Средняя длина клеточки
+            # Считаем среднюю длину клетки
+            for i in list_of_squares_dis:
+                average_length += i
+            average_length = average_length / len(list_of_squares_dis)
+    
+            self.__length_of_square = average_length
+    
+            # Проверка на то, большие клеточки распознал алгоритм, или маленькие
+            if blur_img.shape[0]/average_length > 15:
+                self.__are_squares_big = False
+            else:
+                self.__are_squares_big = True
 
     def __crop_image(self, n, is_show=False):
         """Обрезает изображение сверху и снизу на n пиксель
@@ -321,24 +334,40 @@ class Graphic:
         :param is_show: is_show
         :return: обрезанное изображение
         """
-        img = cv.imread(f'images/{self.__image_name}.jpeg')
-        y0 = n
-        y1 = img.shape[0] - n
-        crop_img = img[y0:y1]
-        if is_show:
-            cv.imshow('cropped', crop_img)
-            cv.waitKey(0)
-        cv.imwrite(f'images/{self.__image_name}.jpeg', crop_img)
+        try:
+            img = cv.imread(f'images/{self.__image_name}.jpeg')
+            if img is None:
+                raise GraphicException('Такого файла нет. Проверьте правильность введения имени файла. crop_image')
+        except GraphicException as g:
+            print(g)
+        else:
+            y0 = n
+            y1 = img.shape[0] - n
+            crop_img = img[y0:y1]
+            if is_show:
+                cv.imshow('cropped', crop_img)
+                cv.waitKey(0)
+            cv.imwrite(f'images/{self.__image_name}.jpeg', crop_img)
 
-        return crop_img
+            return crop_img
 
     def __convert_to_jpeg(self):
         """Переводит выбранный файл в формат .jpeg и удаляет исходный
         """
-        img = cv.imread(f'images/{self.__image_full_name}')
-        img_name = re.split(r'\.', self.__image_full_name)[0]
-        cv.imwrite(f'images/{img_name}.jpeg', img)
-        os.remove(f'images/{self.__image_full_name}')
+        try:
+            img = cv.imread(f'images/{self.__image_full_name}')
+            if img is None:
+                raise GraphicException('Такого файла нет. Проверьте правильность введения имени файла. convert_to_jpeg')
+        except GraphicException as g:
+            print(g)
+        else:
+            try:
+                img_name = re.split(r'\.', self.__image_full_name)[0]
+            except IndexError:
+                print('Файл предоставлен без расширения')
+            else:
+                cv.imwrite(f'images/{img_name}.jpeg', img)
+                os.remove(f'images/{self.__image_full_name}')
 
     @staticmethod
     def __get_digitization_image(img):
@@ -508,12 +537,12 @@ class Graphic:
         r_points = r_points_end   # присваевыем результат к конечному списку
 
         if is_show:  # просто отображение результата (не обязательно)
-            img = cv.imread(f'result.jpeg')
+            img = cv.imread('result.jpeg')
             cv.line(img, (0, int(minimum_boundary)), (np.size(img, 1), int(minimum_boundary)), (255, 0, 255), 1)
             for point in r_points:
                 point = point[:2]
                 cv.circle(img, point, 5, (255, 0, 255), -1)
-            cv.imwrite(f'result.jpg', img)
+            cv.imwrite('result.jpg', img)
             cv.imshow("Image", img)
             cv.waitKey(0)
 
