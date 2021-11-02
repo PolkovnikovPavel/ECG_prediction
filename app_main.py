@@ -18,8 +18,9 @@ master = tkinter.Tk()
 screen_w = 1280  # master.winfo_screenwidth()
 screen_h = 720  # master.winfo_screenheight()
 initialize_w_and_h(screen_w, screen_h)
-canvas = tkinter.Canvas(master, bg='#000000', height=screen_h, width=screen_w)
+canvas = tkinter.Canvas(master, bg='#000000', height=screen_h - 2, width=screen_w - 2)
 canvas.pack(fill=tkinter.BOTH, expand=1)
+master.resizable(False, False)
 
 print(screen_w, screen_h)
 
@@ -43,16 +44,15 @@ main_grope.add_objects(btn)
 
 btn = Button(pw(45), ph(47.5), pw(10), ph(5), 'start_scanning.png', canvas, 'start_scanning_2.png', main_cycle.start_scanning)
 main_grope.add_objects(btn)
-# TODO переработать вопрос, сделать так, чтобы подсказка закрывалась при нажатии в любом месте
-# TODO сделать кнопку для перезапуска графика
-# TODO если точки наложились друг на друга, то одно из них удалить
 
 master.protocol("WM_DELETE_WINDOW", main_cycle.close_window)  # ▼ всё что ниже - неизменно ▼
 master.bind('<Motion>', main_cycle.mouse_move)
 master.bind('<Button-1>', main_cycle.click)
 master.bind('<ButtonRelease-1>', main_cycle.click_out)
+master.bind('<Button-3>', main_cycle.right_click)
+master.bind('<ButtonRelease-3>', main_cycle.right_click_out)
 master.bind('<MouseWheel>', main_cycle.mouse_wheel)
 master.bind('<Key>', main_cycle.pressing_keyboard)
 
 main_cycle.start()
-ScreenRes.set() # Set defaults разрешение экрана
+ScreenRes.set()  # Set defaults разрешение экрана

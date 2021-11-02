@@ -269,8 +269,9 @@ class Point(Object):
                 self.graphic.scan_graphic()
         else:
             if is_clik:
-                if self.check_point(x, y) and not is_taken_one:
+                if self.check_point(x, y) and not is_taken_one and not self.graphic.point_is_taken:
                     self.is_moving = True
+                    self.graphic.point_is_taken = True
                     self.old_x = x
                     self.old_y = y
 
@@ -292,6 +293,7 @@ class ObjectGraphic:
         self.w = w
         self.h = h
         self.is_click = False
+        self.point_is_taken = False
         im = Image.open(self.path_to_file)
         self.img_w, self.img_h = im.size
         self.dict_of_points = {'R': [],
@@ -305,7 +307,7 @@ class ObjectGraphic:
     def create_all_obj(self):
         obj = Object(self.x, self.y, self.w, self.h, self.path_to_file, self.canvas)
         self.group.add_objects(obj)
-        self.trash = Object(0, ph(85), pw(100), ph(15), 'air.png', self.canvas, False)
+        self.trash = Object(0, ph(85), pw(105), ph(20), 'air.png', self.canvas, False)
         self.group.add_objects(self.trash)
 
         for key in self.dict_of_points:
@@ -366,6 +368,7 @@ class ObjectGraphic:
                         is_taken_one = True
                         break
             if not is_taken_one:
+                self.point_is_taken = False
                 for btn in self.adding_group.all_objects:
                     if btn.check_point(x, y):
                         type_p = btn.container[0]
@@ -375,7 +378,7 @@ class ObjectGraphic:
                         self.dict_of_points[type_p].append(obj)
                         self.group.add_objects(obj)
 
-        for key in self.dict_of_points:
+        for key in list(self.dict_of_points.keys())[::-1]:
             for point in self.dict_of_points[key]:
                 point.check(x, y, is_click, is_taken_one)
 

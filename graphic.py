@@ -4,6 +4,7 @@ import math
 import re
 import os
 import copy
+
 """
 Файл для получения всех данных (точек, интервалов)
 """
@@ -11,7 +12,7 @@ import copy
 
 class Graphic:
     def __init__(self, image_full_name, speed):
-        """Конструктор класс
+        """Конструктор класса
 
         :param image_full_name: имя.расширение
         :param speed: Скорость записи ЭКГ. Обычно 25 или 50 мм/с
@@ -23,7 +24,7 @@ class Graphic:
         self.is_equal = None
 
         self.image_full_name = image_full_name
-        self.__image_name = re.split(r'\.', self.image_full_name)[0]
+        # self.__image_name = re.split(r'\.', self.image_full_name)[0]
         # if re.split(r'\.', self.image_full_name)[1] != 'jpeg':  # Если исходный файл не в формате jpeg, то его сразу
         #     # конвертируют
         #     self.convert_to_jpeg()
@@ -38,6 +39,9 @@ class Graphic:
         self.characteristics = []  # В этот список будем записывать все характеристики, такие как все интервалы и ЧСС
         # Когда нам точно станут известным все характеристики, какие интервалы нам нужны, то заменим список np.array
         # И все обращения к нему стоит переделать с .append, к поэлементному обращению
+
+    def get_img(self, flag=cv.IMREAD_UNCHANGED):
+        return cv.imdecode(np.fromfile(self.image_full_name, dtype=np.uint8), flag)  # Чтение изображения
 
     def graph_detection(self):
         """Main-функция.
@@ -59,24 +63,24 @@ class Graphic:
         list_of_intervals = []
         for i in range(len(dict_of_points['LP'])):
             if len(dict_of_points['LP']) > 0 and len(dict_of_points['T']) > 0:
-                list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
+                list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['RT'][0][0]))
                 del dict_of_points['LP'][0]
                 del dict_of_points['RT'][0]
         self.dict_of_intervals['TP'] = list_of_intervals
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
-        for i in range(len(dict_of_points['R'])-1):
+        for i in range(len(dict_of_points['R']) - 1):
             if len(dict_of_points['R']) > 1:
-                list_of_intervals.append(abs(dict_of_points['R'][0][0]-dict_of_points['R'][1][0]))
+                list_of_intervals.append(abs(dict_of_points['R'][0][0] - dict_of_points['R'][1][0]))
                 del dict_of_points['R'][0]
         self.dict_of_intervals['RR'] = list_of_intervals
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
-        for i in range(len(dict_of_points['LP'])-1):
+        for i in range(len(dict_of_points['LP']) - 1):
             if len(dict_of_points['LP']) > 1:
-                list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['LP'][1][0]))
+                list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['LP'][1][0]))
                 del dict_of_points['LP'][0]
         self.dict_of_intervals['PP'] = list_of_intervals
 
@@ -85,10 +89,10 @@ class Graphic:
         for i in range(len(dict_of_points['LP'])):
             if len(dict_of_points['Q']) > 0 and len(dict_of_points['LP']) > 0:
                 if len(dict_of_points['Q']) > 1:
-                    if abs(dict_of_points['LP'][0][0]-dict_of_points['Q'][1][0]) < \
-                            abs(dict_of_points['LP'][0][0]-dict_of_points['Q'][0][0]):
+                    if abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][1][0]) < \
+                            abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][0][0]):
                         del dict_of_points['Q'][0]
-                list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['Q'][0][0]))
+                list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][0][0]))
                 del dict_of_points['LP'][0]
                 del dict_of_points['Q'][0]
         self.dict_of_intervals['PQ'] = list_of_intervals
@@ -98,10 +102,10 @@ class Graphic:
         for i in range(len(dict_of_points['Q'])):
             if len(dict_of_points['RT']) > 0 and len(dict_of_points['Q']) > 0:
                 if len(dict_of_points['RT']) > 1:
-                    if abs(dict_of_points['Q'][0][0]-dict_of_points['RT'][1][0]) < \
-                            abs(dict_of_points['Q'][0][0]-dict_of_points['RT'][0][0]):
+                    if abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][1][0]) < \
+                            abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][0][0]):
                         del dict_of_points['RT'][0]
-                list_of_intervals.append(abs(dict_of_points['Q'][0][0]-dict_of_points['RT'][0][0]))
+                list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][0][0]))
                 del dict_of_points['Q'][0]
                 del dict_of_points['RT'][0]
         self.dict_of_intervals['PQ'] = list_of_intervals
@@ -111,10 +115,10 @@ class Graphic:
         for i in range(len(dict_of_points['Q'])):
             if len(dict_of_points['RS']) > 0 and len(dict_of_points['Q']) > 0:
                 if len(dict_of_points['RS']) > 1:
-                    if abs(dict_of_points['Q'][0][0]-dict_of_points['RS'][1][0]) < \
-                            abs(dict_of_points['Q'][0][0]-dict_of_points['RS'][0][0]):
+                    if abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][1][0]) < \
+                            abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][0][0]):
                         del dict_of_points['RS'][0]
-                list_of_intervals.append(abs(dict_of_points['Q'][0][0]-dict_of_points['RS'][0][0]))
+                list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][0][0]))
                 del dict_of_points['Q'][0]
                 del dict_of_points['RS'][0]
         self.dict_of_intervals['QRS'] = list_of_intervals
@@ -124,10 +128,10 @@ class Graphic:
         for i in range(len(dict_of_points['Q'])):
             if len(dict_of_points['R']) > 0 and len(dict_of_points['Q']) > 0:
                 if len(dict_of_points['R']) > 1:
-                    if abs(dict_of_points['Q'][0][0]-dict_of_points['R'][1][0]) < \
-                            abs(dict_of_points['Q'][0][0]-dict_of_points['R'][0][0]):
+                    if abs(dict_of_points['Q'][0][0] - dict_of_points['R'][1][0]) < \
+                            abs(dict_of_points['Q'][0][0] - dict_of_points['R'][0][0]):
                         del dict_of_points['R'][0]
-                list_of_intervals.append(abs(dict_of_points['Q'][0][0]-dict_of_points['R'][0][0]))
+                list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['R'][0][0]))
                 del dict_of_points['Q'][0]
                 del dict_of_points['R'][0]
         self.dict_of_intervals['QR'] = list_of_intervals
@@ -140,7 +144,7 @@ class Graphic:
         wight = self.__img_otsus_method.shape[0]
         height = self.__img_otsus_method.shape[1]
         img = np.zeros((wight, height, 3), np.uint8)
-        colors = {'R': (255, 0, 255),   # цвета
+        colors = {'R': (255, 0, 255),  # цвета
                   'Q': (0, 200, 255),
                   'S': (0, 255, 193),
                   'T': (255, 214, 145),
@@ -204,7 +208,7 @@ class Graphic:
         :return: ч/б изображение без заднего фона (только график ЭКГ)
         """
         if path_to_file is None:
-            img = cv.imread(self.image_full_name)  # Чтение изображения
+            img = self.get_img()  # Чтение изображения
         else:
             img = cv.imread(path_to_file)
         if is_show:
@@ -235,7 +239,7 @@ class Graphic:
         :param is_show: is_show
         """
         # Исходное изображение
-        img = cv.imread(self.image_full_name, cv.IMREAD_GRAYSCALE)
+        img = self.get_img(cv.IMREAD_GRAYSCALE)
         if is_show:
             cv.imshow("Original", img)
             cv.waitKey(0)
@@ -260,7 +264,6 @@ class Graphic:
 
         # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
         img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file='images/temp_w-o_graphic.jpeg')
-
 
         # Выделяем контуры клеточек
         (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
@@ -503,11 +506,11 @@ class Graphic:
                 if dist < average_dist / 4:  # если растояние меньше 1/4 от среднего, то будем считать это группой
                     all_x.append(x2)  # добавляем
                     all_y.append(y2)
-            point_end = (sum(all_x) // len(all_x), sum(all_y) // len(all_y))   # добавляем результат группы (даже если
+            point_end = (sum(all_x) // len(all_x), sum(all_y) // len(all_y))  # добавляем результат группы (даже если
             # 1-а)
             if point_end not in r_points_end:
                 r_points_end.append(point_end)
-        r_points = r_points_end   # присваевыем результат к конечному списку
+        r_points = r_points_end  # присваевыем результат к конечному списку
 
         if is_show:  # просто отображение результата (не обязательно)
             img = cv.imread(f'result.jpeg')
@@ -521,7 +524,7 @@ class Graphic:
 
         return r_points
 
-    def __get_and_find_points_q_and_s(self, points_r):   # отдаёт 2 списка с точками Q и S
+    def __get_and_find_points_q_and_s(self, points_r):  # отдаёт 2 списка с точками Q и S
         """Ищет точки q и s.
 
         Суть работы
@@ -536,7 +539,7 @@ class Graphic:
         points_q = []
         points_s = []
 
-        list_of_x_r = list(map(lambda x: x[0], points_r))   # определяет среднию дистанцию между R
+        list_of_x_r = list(map(lambda x: x[0], points_r))  # определяет среднию дистанцию между R
         average_dist_x = 0
         for i in range(len(points_r) - 1):
             average_dist_x += list_of_x_r[i + 1] - list_of_x_r[i]
@@ -555,7 +558,7 @@ class Graphic:
                     list_of_points_s.append(point)
                 else:
                     list_of_points_q.append(point)
-            points_s.append(max(list_of_points_s, key=lambda x: x[1]))   # берёт самую низкую точку из указанного
+            points_s.append(max(list_of_points_s, key=lambda x: x[1]))  # берёт самую низкую точку из указанного
             # диапазона
             points_q.append(max(list_of_points_q, key=lambda x: x[1]))
 
@@ -576,18 +579,18 @@ class Graphic:
         points_t = []
         average_width_r = 0
         average_dist = 0
-        for i in range(len(points_r)):   # проверяет каждую точку R
+        for i in range(len(points_r)):  # проверяет каждую точку R
             if i < len(points_r) - 1:
-                width = points_r[i + 1][0] - points_r[i][0]   # растояние по оси Х между RR
-                average_width_r += width   # среднее растояние
+                width = points_r[i + 1][0] - points_r[i][0]  # растояние по оси Х между RR
+                average_width_r += width  # среднее растояние
                 points = list(filter(lambda x: points_r[i][0] < x[0] < points_r[i][0] + width / 2,
                                      self.__all_extremes))
                 # это самое главное - выбирает все точки, принадлежащие диапозону
 
                 points.sort(key=lambda x: x[1])
-                average_dist += points[0][0] - points_r[i][0]   # то на сколько точка Т удалена от R
+                average_dist += points[0][0] - points_r[i][0]  # то на сколько точка Т удалена от R
                 points_t.append(points[0][:2])
-            else:   # работет при обработке диапозона после последней точки R.
+            else:  # работет при обработке диапозона после последней точки R.
                 # Тут-то и нужны average_dist и average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
                 average_dist = average_dist / (len(points_r) - 1)
@@ -596,7 +599,7 @@ class Graphic:
                 points.sort(key=lambda x: x[1])
                 dist = points[0][0] - points_r[i][0]
                 if average_dist * 0.75 < dist < average_dist * 1.25:
-                    points_t.append(points[0][:2])   # нужно, чтоб последняя точка не выбивалось от большенства
+                    points_t.append(points[0][:2])  # нужно, чтоб последняя точка не выбивалось от большенства
         return points_t
 
     def __get_and_find_points_p(self, points_r):
@@ -614,18 +617,18 @@ class Graphic:
         points_p = []
         average_width_r = 0
         average_dist = 0
-        for i in range(len(points_r) - 1, -1, -1):   # проверяет каждую точку R в обратном порядке
+        for i in range(len(points_r) - 1, -1, -1):  # проверяет каждую точку R в обратном порядке
             if i > 0:
-                width = points_r[i][0] - points_r[i - 1][0]   # растояние по оси Х между RR
-                average_width_r += width   # среднее растояние
+                width = points_r[i][0] - points_r[i - 1][0]  # растояние по оси Х между RR
+                average_width_r += width  # среднее растояние
                 points = list(filter(lambda x: points_r[i][0] > x[0] > points_r[i][0] - width / 2,
                                      self.__all_extremes))
                 # это самое главное - выбирает все точки, принадлежащие диапозону
 
                 points.sort(key=lambda x: x[1])
-                average_dist += points_r[i][0] - points[0][0]   # то на сколько точка Р удалена от R
+                average_dist += points_r[i][0] - points[0][0]  # то на сколько точка Р удалена от R
                 points_p.append(points[0][:2])
-            else:   # работет при обработке диапозона перед первой точкой R. Тут-то и нужны average_dist и
+            else:  # работет при обработке диапозона перед первой точкой R. Тут-то и нужны average_dist и
                 # average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
                 average_dist = average_dist / (len(points_r) - 1)
@@ -634,7 +637,7 @@ class Graphic:
                 points.sort(key=lambda x: x[1])
                 dist = points_r[i][0] - points[0][0]
                 if average_dist * 0.75 < dist < average_dist * 1.25:
-                    points_p.append(points[0][:2])   # нужно, чтоб самая первая точка не выбивалось от большенства
+                    points_p.append(points[0][:2])  # нужно, чтоб самая первая точка не выбивалось от большенства
         return points_p
 
     def __get_dictionary_of_key_points(self, is_show=False):
@@ -646,7 +649,7 @@ class Graphic:
         """
 
         key_points = {}
-        colors = {'R': (255, 0, 255),   # цвета
+        colors = {'R': (255, 0, 255),  # цвета
                   'Q': (0, 200, 255),
                   'S': (0, 255, 193),
                   'T': (255, 214, 145),
@@ -656,14 +659,14 @@ class Graphic:
         if self.__all_points is None:
             self.graph_detection()
 
-        all_extremes = list(filter(lambda x: x[2] == 1, self.__all_points))   # выделяет из все точек только экстремумы
-        all_points_r = self.__get_and_find_points_r(False)   # точки R
-        all_points_r.sort(key=lambda x: x[0])   # сортировка по возврастанию Х
+        all_extremes = list(filter(lambda x: x[2] == 1, self.__all_points))  # выделяет из все точек только экстремумы
+        all_points_r = self.__get_and_find_points_r(False)  # точки R
+        all_points_r.sort(key=lambda x: x[0])  # сортировка по возврастанию Х
         all_extremes.sort(key=lambda x: x[0])
 
-        points_q, points_s = self.__get_and_find_points_q_and_s(all_points_r)   # точки Q и S
-        points_t = self.__get_and_find_points_t(all_points_r)   # точки T
-        points_p = self.__get_and_find_points_p(all_points_r)   # точки P
+        points_q, points_s = self.__get_and_find_points_q_and_s(all_points_r)  # точки Q и S
+        points_t = self.__get_and_find_points_t(all_points_r)  # точки T
+        points_p = self.__get_and_find_points_p(all_points_r)  # точки P
         points_p.sort(key=lambda x: x[0])
 
         key_points['R'] = all_points_r
@@ -672,7 +675,7 @@ class Graphic:
         key_points['T'] = points_t
         key_points['P'] = points_p
 
-        if is_show:   # вывод результата
+        if is_show:  # вывод результата
             img = cv.imread(f'result.jpeg')
             for type in key_points:
                 for point in key_points[type]:
@@ -804,7 +807,7 @@ class Graphic:
                 point_b = all_extremes[i]
                 length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
                 length_b_rs = ((point_rs[0] - point_b[0]) ** 2 + (
-                            point_rs[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
+                        point_rs[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
                 if length_tb + length_b_rs <= length_rs_t:  # основное свойства существования треуголька
                     continue
                 # теорема косинусов для определения угла отклонения и высоты относительно RS-T
@@ -876,7 +879,7 @@ class Graphic:
         # Это условие позволяет на последнем этапе убирать шумы контуров, если они каким-то чудом смогли сюда добраться,
         # путём обощения маленьких контуров в большую клетку
         if qua_of_big_squares < 6:
-            length_of_rs = qua_of_big_squares*5  # расстояние между вершинами R в мм
+            length_of_rs = qua_of_big_squares * 5  # расстояние между вершинами R в мм
             if self.speed_of_ecg == 25:
                 time_of_rs = round(time_of_rs * 0.2, 2)  # Размер одной большой клеточки - 0.5 см или 0,2 секунды
             else:
@@ -889,7 +892,7 @@ class Graphic:
             else:
                 time_of_rs = round(time_of_rs * 0.1, 2)  # Размер одной одной маленькой клеточки - 0,1 см
                 # или 0,02 секунды
-        
+
         self.is_equal = is_equal
         self.__qua_of_big_squares = qua_of_big_squares
         self.__time_of_rs = time_of_rs
@@ -902,3 +905,28 @@ class Graphic:
         """
         self.__is_r_distance_equal()
         self.characteristics.append(round(60 / (self.__length_of_rs * 0.0016 * self.speed_of_ecg), 2))
+
+    def get_size_one_pixel(self):
+        average_w = 0
+        if len(self.dict_of_points['R']) < 2:
+            return 1
+        for i in range(1, len(self.dict_of_points['R'])):
+            point1 = self.dict_of_points['R'][i - 1]
+            point2 = self.dict_of_points['R'][i]
+            average_w += abs(point1[0] - point2[0])
+        average_w = average_w / (len(self.dict_of_points['R']) - 1)
+        interval_rr = sum(self.dict_of_intervals['RR']) / len(self.dict_of_intervals['RR'])
+        return interval_rr / average_w
+
+
+    def get_text_of_general_information(self):
+        return '''Среднее значение интервалов:
+TP - 0.21 сек.
+RR - 0.86 сек.
+PP - 0.8633 сек.
+PQ - 0.2275 сек.
+QT - 0.42 сек.
+QRS - 0.122 сек.
+QR - 0.034 сек.
+ЧСС:    69.88 уд/мин.
+Первичное заключение:   Сердце бьётся ритмично. '''
