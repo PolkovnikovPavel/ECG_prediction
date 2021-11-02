@@ -105,7 +105,7 @@ class MainCycle:
         if self.type_menu == 'view_menu':
             line1 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.4))
             line2 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.3), dash=(pw(1.2), ph(0.4)))
-            text = Text(self.mouse_x, self.mouse_y - ph(4), '0', self.canvas, font=f'Times {ph(4)} italic bold')
+            text = Text(self.mouse_x, self.mouse_y - ph(4), '0', self.canvas, font=f'Times {ph(3)} italic bold')
             self.ruler = [self.mouse_x, self.mouse_y, line1, line2, text]
 
 
@@ -139,6 +139,9 @@ class MainCycle:
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_grope.add_objects(self.obj_result)
 
+        self.text_css = Text(pw(73), ph(5), 'Чсс', self.canvas, font=f'Times {ph(3)} italic bold', visibility=False)
+        self.view_grope.add_objects(self.text_css)
+
         self.view_grope.show_all()
         self.main_grope.hide_all()
 
@@ -159,9 +162,9 @@ class MainCycle:
             self.graphic.dict_of_points[key] = []
             for point in self.obj_graphic.dict_of_points[key]:
                 self.graphic.dict_of_points[key].append(point.get_cor_point())
-        self.graphic.characteristics = []
         self.graphic.find_heart_rate()
-        print(self.graphic.characteristics[0])
+        self.graphic.find_intervals()
+        self.text_css.set_new_text(round(self.graphic.heart_rate, 2))
 
     def show_hide_instruction(self, *args):
         obj = args[0]
@@ -179,7 +182,7 @@ class MainCycle:
         self.obj_result.change_img('button_result_2.png', pw(50), ph(50))
         self.obj_result.go_to(pw(45), ph(47))
         text = self.graphic.get_text_of_general_information()
-        self.test_result = Text(pw(65), ph(75), text, self.canvas, font=f'Times {ph(2)} italic bold')
+        self.test_result = Text(pw(70), ph(75), text, self.canvas, font=f'Times {ph(2)} italic bold')
 
     def hide_result(self):
         self.obj_result.change_img('button_result.png', pw(10), ph(10))

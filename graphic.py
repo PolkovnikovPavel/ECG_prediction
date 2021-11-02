@@ -36,7 +36,7 @@ class Graphic:
         self.__img_otsus_method = None
         self.__are_squares_big = False
         self.__length_of_rs_in_mm = 0
-        self.__heart_rate = 0
+        self.heart_rate = 0
         self.prediction = ''
 
     def get_img(self, flag=cv.IMREAD_UNCHANGED):
@@ -915,9 +915,9 @@ class Graphic:
         """Ищет ЧСС"""
         self.__is_r_distance_equal()
         if self.speed_of_ecg == 25:
-            self.__heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.04), 2)
+            self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.04), 2)
         else:
-            self.__heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
+            self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
 
     def __convert_intervals_lengths_from_pixels_to_seconds(self):
         """Как понятно из названия, эта функция переводит длины интервалов из пикслей в секунды и записывает их заново
@@ -945,7 +945,7 @@ class Graphic:
                         # 0,1 см или 0,02 секунды
 
     def get_text_of_general_information(self):
-        self.prediction = 'Основные характеристики ЭКГ:\nСреднее значение интервалов:\n'
+        self.prediction = 'Среднее значение интервалов:\n'
         for i in self.dict_of_intervals:
             average_interval = 0
             for j in range(len(self.dict_of_intervals[i])):
@@ -956,15 +956,16 @@ class Graphic:
                 self.prediction += f'{i} - Недостаточно точек для определения.\n'
             else:
                 self.prediction += f'{i} - {average_interval} сек.\n'
-        self.prediction += f"ЧСС:\n{self.__heart_rate} уд/мин.\nПервичное заключение:\n"
+        self.prediction += f"ЧСС:\n{self.heart_rate} уд/мин.\nПервичное заключение:\n"
         if self.__is_equal:
             self.prediction += 'Сердце бьётся ритмично. '
         else:
             self.prediction += 'Сердце бьётся не ритмично. '
-        if self.__heart_rate > 90:
+        if self.heart_rate > 90:
             self.prediction += 'Наблюдается синусовая тахикардия.'
-        elif self.__heart_rate < 50:
+        elif self.heart_rate < 50:
             self.prediction += 'Наблюдается синусовая брадикардия.'
+        self.prediction += '\n' + '⠀' * 45
         return self.prediction
 
     def get_size_one_pixel(self):
@@ -978,3 +979,7 @@ class Graphic:
         average_w = average_w / (len(self.dict_of_points['R']) - 1)
         interval_rr = sum(self.dict_of_intervals['RR']) / len(self.dict_of_intervals['RR'])
         return interval_rr / average_w
+
+    def find_intervals(self):
+        self.__get_intervals()
+        self.__convert_intervals_lengths_from_pixels_to_seconds()
