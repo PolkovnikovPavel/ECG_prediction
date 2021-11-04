@@ -955,7 +955,7 @@ class Graphic:
             if average_interval == 0:
                 self.prediction += f'{i} - Недостаточно точек для определения.\n'
             else:
-                self.prediction += f'{i} - {average_interval} сек.\n'
+                self.prediction += f'{i} - {round(average_interval, 2)} сек.\n'
         self.prediction += f"ЧСС:\n{self.heart_rate} уд/мин.\nПервичное заключение:\n"
         if self.__is_equal:
             self.prediction += 'Сердце бьётся ритмично. '
