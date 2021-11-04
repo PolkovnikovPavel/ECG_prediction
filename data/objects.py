@@ -329,6 +329,22 @@ class ObjectGraphic:
         obj = Object(pw(60), ph(87), ph(10), ph(10), 'add_point_t.png', self.canvas, container=['T'])
         self.adding_group.add_objects(obj)
 
+    def temporarily_hide_points(self, *args):
+        obj = args[0]
+        for key in self.dict_of_points:
+            for point in self.dict_of_points[key]:
+                point.hide()
+        obj.function = self.temporarily_show_points
+        obj.change_img('hide_points_2.png', ph(5), ph(5))
+
+    def temporarily_show_points(self, *args):
+        obj = args[0]
+        for key in self.dict_of_points:
+            for point in self.dict_of_points[key]:
+                point.show()
+        obj.function = self.temporarily_hide_points
+        obj.change_img('hide_points.png', ph(5), ph(5))
+
     def del_point(self, point):
         cor_point = point.point
         for key in self.dict_of_points:

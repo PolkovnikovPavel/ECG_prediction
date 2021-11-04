@@ -36,13 +36,13 @@ main_cycle = MainCycle(canvas, all_gropes)
 
 bg = Object(0, 0, pw(100), ph(100), 'background.png', canvas)  # с этого места идёт создание необходимых объектов
 main_grope.add_objects(bg)
-exit_btn = Button(pw(95), ph(3), ph(5), ph(5), 'exit_button.png', canvas, 'exit_button_2.png', main_cycle.close_window)
+exit_btn = Button(pw(95), ph(3), ph(6), ph(6), 'exit_button.png', canvas, 'exit_button_2.png', main_cycle.close_window)
 main_grope.add_objects(exit_btn)
 
-btn = Button(pw(28), ph(47.5), pw(5), ph(5), 'exit_button.png', canvas, 'exit_button_2.png', main_cycle.set_file_name)
+btn = Button(pw(28), ph(44), ph(12), ph(12), 'open_file.png', canvas, 'open_file_2.png', main_cycle.set_file_name)
 main_grope.add_objects(btn)
 
-btn = Button(pw(45), ph(47.5), pw(10), ph(5), 'start_scanning.png', canvas, 'start_scanning_2.png', main_cycle.start_scanning)
+btn = Button(pw(40), ph(44.5), pw(20), pw(6), 'start_scanning.png', canvas, 'start_scanning_2.png', main_cycle.start_scanning)
 main_grope.add_objects(btn)
 
 master.protocol("WM_DELETE_WINDOW", main_cycle.close_window)  # ▼ всё что ниже - неизменно ▼

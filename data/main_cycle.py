@@ -73,7 +73,8 @@ class MainCycle:
                 line2 = self.canvas.create_line(self.ruler[0], self.ruler[1], self.mouse_x, self.ruler[1], width=ph(0.3),
                                                 dash=(ph(0.7), ph(0.3)))
                 text = self.ruler[4]
-                text.set_new_text(str(round(abs(self.ruler[0] - self.mouse_x) * self.graphic.get_size_one_pixel(), 1)))
+                text.set_new_text(str(round(
+                    abs(self.ruler[0] - self.mouse_x) * self.graphic.get_size_one_pixel(), 1)) + ' сек.')
                 text.go_to(self.ruler[0] + (self.mouse_x - self.ruler[0]) / 2, self.ruler[1] - ph(4))
                 self.ruler = [self.ruler[0], self.ruler[1], line1, line2, text]
 
@@ -105,7 +106,7 @@ class MainCycle:
         if self.type_menu == 'view_menu':
             line1 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.4))
             line2 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.3), dash=(pw(1.2), ph(0.4)))
-            text = Text(self.mouse_x, self.mouse_y - ph(4), '0', self.canvas, font=f'Times {ph(3)} italic bold')
+            text = Text(self.mouse_x, self.mouse_y - ph(4), '0 сек.', self.canvas, font=f'Times {ph(3)} italic bold')
             self.ruler = [self.mouse_x, self.mouse_y, line1, line2, text]
 
 
@@ -122,24 +123,30 @@ class MainCycle:
         bg = Object(0, 0, pw(100), ph(100), 'background_view_menu.png', self.canvas)
         self.view_grope.add_objects(bg)
 
-        btn = Button(pw(94), ph(1), ph(5), ph(5), 'question_button.png', self.canvas,
+        btn = Button(pw(94), ph(2), ph(6), ph(6), 'question_button.png', self.canvas,
                      function=self.show_hide_instruction, container=[False], visibility=False)
         btn.args = btn
         self.view_grope.add_objects(btn)
 
-        btn = Button(pw(80), ph(1), ph(5), ph(5), 'restart.png', self.canvas, 'restart_2.png',
+        btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, 'restart_2.png',
                      function=self.start_scanning, container=[False], visibility=False)
         self.view_grope.add_objects(btn)
 
-        btn = Button(pw(2), ph(3), ph(10), ph(5), 'tabl_left.png', self.canvas, 'tabl.png', self.start_main_menu)
+        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png', self.start_main_menu)
         self.view_grope.add_objects(btn)
         self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75), scan_graphic=self.scan_graphic)
         self.view_grope.add_objects(self.obj_graphic)
 
+        btn = Button(pw(86), ph(2.5), ph(5), ph(5), 'hide_points.png', self.canvas,
+                     function=self.obj_graphic.temporarily_hide_points)
+        btn.args = btn
+        self.view_grope.add_objects(btn)
+
+
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_grope.add_objects(self.obj_result)
 
-        self.text_css = Text(pw(73), ph(5), 'Чсс', self.canvas, font=f'Times {ph(3)} italic bold', visibility=False)
+        self.text_css = Text(pw(73), ph(5), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas, font=f'Times {ph(3)} italic bold', visibility=False)
         self.view_grope.add_objects(self.text_css)
 
         self.view_grope.show_all()
@@ -164,14 +171,14 @@ class MainCycle:
                 self.graphic.dict_of_points[key].append(point.get_cor_point())
         self.graphic.find_heart_rate()
         self.graphic.find_intervals()
-        self.text_css.set_new_text(round(self.graphic.heart_rate, 2))
+        self.text_css.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
 
     def show_hide_instruction(self, *args):
         obj = args[0]
         is_open = obj.container[0]
         if is_open:
-            obj.change_img('question_button.png', ph(5), ph(5))
-            obj.go_to(pw(94), ph(1))
+            obj.change_img('question_button.png', ph(6), ph(6))
+            obj.go_to(pw(94), ph(2))
             obj.container[0] = False
         else:
             obj.change_img('question_button_2.png', pw(100), ph(100))

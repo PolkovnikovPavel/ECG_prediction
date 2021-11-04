@@ -983,3 +983,4 @@ class Graphic:
     def find_intervals(self):
         self.__get_intervals()
         self.__convert_intervals_lengths_from_pixels_to_seconds()
+        self.__is_r_distance_equal()
