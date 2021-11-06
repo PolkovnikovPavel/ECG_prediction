@@ -66,7 +66,7 @@ class Graphic:
             list_of_intervals = [0]
         else:
             for i in range(len(dict_of_points['LP'])):
-                if len(dict_of_points['LP']) > 0 and len(dict_of_points['T']) > 0:
+                if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
                     list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
                     del dict_of_points['LP'][0]
                     del dict_of_points['RT'][0]
