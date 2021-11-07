@@ -132,6 +132,10 @@ class MainCycle:
                      function=self.start_scanning, container=[False], visibility=False)
         self.view_grope.add_objects(btn)
 
+        self.mode_switcher = Button(pw(25), ph(1.5), ph(14), ph(7), 'switch_mode.png', self.canvas,
+                     function=self.set_speed_50, container=[False])
+        self.view_grope.add_objects(self.mode_switcher)
+
         btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png', self.start_main_menu)
         self.view_grope.add_objects(btn)
         self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75), scan_graphic=self.scan_graphic)
@@ -164,14 +168,17 @@ class MainCycle:
         self.graphic.graph_detection()
         self.start_view_menu()
 
+    def update_graph_data(self):
+        self.graphic.find_heart_rate()
+        self.graphic.find_intervals()
+        self.text_css.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
+
     def scan_graphic(self, *args):
         for key in self.obj_graphic.dict_of_points:
             self.graphic.dict_of_points[key] = []
             for point in self.obj_graphic.dict_of_points[key]:
                 self.graphic.dict_of_points[key].append(point.get_cor_point())
-        self.graphic.find_heart_rate()
-        self.graphic.find_intervals()
-        self.text_css.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
+        self.update_graph_data()
 
     def show_hide_instruction(self, *args):
         obj = args[0]
@@ -196,4 +203,17 @@ class MainCycle:
         self.obj_result.go_to(pw(85), ph(87))
         self.test_result.hide()
 
+    def set_speed_25(self, *args):
+        self.mode_switcher.change_img('switch_mode.png', ph(14), ph(7))
+        self.mode_switcher.function = self.set_speed_50
+        self.graphic.speed_of_ecg = 25
+        self.peed_reading = 25
+        self.update_graph_data()
+
+    def set_speed_50(self, *args):
+        self.mode_switcher.change_img('switch_mode_2.png', ph(14), ph(7))
+        self.mode_switcher.function = self.set_speed_25
+        self.graphic.speed_of_ecg = 50
+        self.peed_reading = 50
+        self.update_graph_data()
 

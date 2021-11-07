@@ -66,7 +66,7 @@ class Graphic:
             list_of_intervals = [0]
         else:
             for i in range(len(dict_of_points['LP'])):
-                if len(dict_of_points['LP']) > 0 and len(dict_of_points['T']) > 0:
+                if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
                     list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
                     del dict_of_points['LP'][0]
                     del dict_of_points['RT'][0]
@@ -951,7 +951,10 @@ class Graphic:
             for j in range(len(self.dict_of_intervals[i])):
                 average_interval += self.dict_of_intervals[i][j]
 
-            average_interval = round(average_interval / len(self.dict_of_intervals[i]), 4)
+            if len(self.dict_of_intervals[i]) >= 2:
+                average_interval = average_interval / (len(self.dict_of_intervals[i]) - 1)
+            else:
+                average_interval = average_interval
             if average_interval == 0:
                 self.prediction += f'{i} - Недостаточно точек для определения.\n'
             else:
