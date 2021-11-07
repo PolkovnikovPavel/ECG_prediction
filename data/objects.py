@@ -239,7 +239,7 @@ class Point(Object):
                         'T': 'point_t_image.png',
                         'P': 'point_p_image.png',
                         'LP': 'point_lp_image.png',
-                        'RS': 'point_rp_image.png',
+                        'RS': 'point_rs_image.png',
                         'LT': 'point_lt_image.png',
                         'RT': 'point_rt_image.png'}
         super().__init__(x, y, w, h, self.__names[type_point], canvas, visibility, container, mode_coord)
@@ -336,7 +336,7 @@ class ObjectGraphic:
         self.adding_group.add_objects(obj)
         obj = Object(pw(40), ph(87), ph(10), ph(10), 'add_point_s.png', self.canvas, container=['S'])
         self.adding_group.add_objects(obj)
-        obj = Object(pw(47), ph(87), ph(10), ph(10), 'add_point_rp.png', self.canvas, container=['RS'])
+        obj = Object(pw(47), ph(87), ph(10), ph(10), 'add_point_rs.png', self.canvas, container=['RS'])
         self.adding_group.add_objects(obj)
         obj = Object(pw(54), ph(87), ph(10), ph(10), 'add_point_lt.png', self.canvas, container=['LT'])
         self.adding_group.add_objects(obj)
