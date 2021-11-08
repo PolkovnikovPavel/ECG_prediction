@@ -66,7 +66,7 @@ class Graphic:
             list_of_intervals = [0]
         else:
             for i in range(len(dict_of_points['LP'])):
-                if len(dict_of_points['LP']) > 0 and len(dict_of_points['T']) > 0:
+                if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
                     list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
                     del dict_of_points['LP'][0]
                     del dict_of_points['RT'][0]
@@ -192,6 +192,7 @@ class Graphic:
     def save_result(self, path='result.jpg', is_key_points=True):
         """
         Только сохраняет
+
         :return: None
         """
         wight = self.__img_otsus_method.shape[0]
@@ -341,7 +342,7 @@ class Graphic:
             self.__are_squares_big = True
 
     def crop_image(self, n, is_show=False):
-        """Обрезает изображение сверху и снизу на n пиксель
+        """Обрезает изображение сверху и снизу на n пикселей
 
         :param n: число пикселей, на которое изображение обрежется
         :param is_show: is_show
@@ -389,7 +390,7 @@ class Graphic:
         """Ищет экстремумы на графике.
 
         :param array: изображение, прошедшие удаление заднего фона и переведённое в нолики и единички
-        :return:None"""
+        :return: None"""
         last_points = []  # результат (х, у, id)
         # id:
         # 1) точка экстремума
@@ -723,6 +724,7 @@ class Graphic:
     def __defining_intervals_t_p(self):
         """
         Находит точки для интервала между T и P
+
         :return: True если всё хорошо
         """
         img = cv.imread(f'result.jpg')
@@ -791,6 +793,7 @@ class Graphic:
     def __defining_intervals_s_t(self):
         """
         Находит точки для интервала между S и T
+
         :return: True если всё хорошо
         """
         img = cv.imread(f'result.jpg')
@@ -920,8 +923,10 @@ class Graphic:
             self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
 
     def __convert_intervals_lengths_from_pixels_to_seconds(self):
-        """Как понятно из названия, эта функция переводит длины интервалов из пикслей в секунды и записывает их заново
-         в dict_of_intervals"""
+        """Как понятно из названия, эта процедура переводит длины интервалов из пикслей в секунды и записывает их заново
+         в dict_of_intervals
+
+         :return: None"""
         for i in self.dict_of_intervals:
             for j in range(len(self.dict_of_intervals[i])):
                 if self.__are_squares_big:
@@ -945,13 +950,21 @@ class Graphic:
                         # 0,1 см или 0,02 секунды
 
     def get_text_of_general_information(self):
+        """Формирует всю известную по анализу информацию в одно строковое поле.
+
+        :return: None"""
         self.prediction = 'Среднее значение интервалов:\n'
         for i in self.dict_of_intervals:
             average_interval = 0
             for j in range(len(self.dict_of_intervals[i])):
                 average_interval += self.dict_of_intervals[i][j]
 
-            average_interval = round(average_interval / len(self.dict_of_intervals[i]), 4)
+            if len(self.dict_of_intervals[i]) > 2:
+                average_interval = average_interval / (len(self.dict_of_intervals[i]) - 1)
+            elif len(self.dict_of_intervals[i]) == 2:
+                average_interval = average_interval / 2
+            else:
+                average_interval = average_interval
             if average_interval == 0:
                 self.prediction += f'{i} - Недостаточно точек для определения.\n'
             else:
@@ -969,6 +982,9 @@ class Graphic:
         return self.prediction
 
     def get_size_one_pixel(self):
+        """Ищет время одного пикселя в секундах
+
+        :return: Время одного пикселя"""
         average_w = 0
         if len(self.dict_of_points['R']) < 2:
             return 1
@@ -981,6 +997,9 @@ class Graphic:
         return interval_rr / average_w
 
     def find_intervals(self):
+        """Процедура, объединяющая все действия по нахождению интервалов
+
+        :return: None"""
         self.__get_intervals()
         self.__convert_intervals_lengths_from_pixels_to_seconds()
         self.__is_r_distance_equal()

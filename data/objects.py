@@ -237,7 +237,11 @@ class Point(Object):
                         'Q': 'point_q_image.png',
                         'S': 'point_s_image.png',
                         'T': 'point_t_image.png',
-                        'P': 'point_p_image.png'}
+                        'P': 'point_p_image.png',
+                        'LP': 'point_lp_image.png',
+                        'RS': 'point_rs_image.png',
+                        'LT': 'point_lt_image.png',
+                        'RT': 'point_rt_image.png'}
         super().__init__(x, y, w, h, self.__names[type_point], canvas, visibility, container, mode_coord)
         self.is_moving = False
         self.type_point = type_point
@@ -300,7 +304,11 @@ class ObjectGraphic:
                                'Q': [],
                                'S': [],
                                'T': [],
-                               'P': []}
+                               'P': [],
+                               'LP': [],
+                               'RS': [],
+                               'LT': [],
+                               'RT': []}
 
         self.create_all_obj()
 
@@ -318,15 +326,23 @@ class ObjectGraphic:
                 self.group.add_objects(obj)
                 self.dict_of_points[key].append(obj)
 
-        obj = Object(pw(20), ph(87), ph(10), ph(10), 'add_point_p.png', self.canvas, container=['P'])
+        obj = Object(pw(12), ph(87), ph(10), ph(10), 'add_point_lp.png', self.canvas, container=['LP'])
         self.adding_group.add_objects(obj)
-        obj = Object(pw(30), ph(87), ph(10), ph(10), 'add_point_q.png', self.canvas, container=['Q'])
+        obj = Object(pw(19), ph(87), ph(10), ph(10), 'add_point_p.png', self.canvas, container=['P'])
         self.adding_group.add_objects(obj)
-        obj = Object(pw(40), ph(87), ph(10), ph(10), 'add_point_r.png', self.canvas, container=['R'])
+        obj = Object(pw(26), ph(87), ph(10), ph(10), 'add_point_q.png', self.canvas, container=['Q'])
         self.adding_group.add_objects(obj)
-        obj = Object(pw(50), ph(87), ph(10), ph(10), 'add_point_s.png', self.canvas, container=['S'])
+        obj = Object(pw(33), ph(87), ph(10), ph(10), 'add_point_r.png', self.canvas, container=['R'])
         self.adding_group.add_objects(obj)
-        obj = Object(pw(60), ph(87), ph(10), ph(10), 'add_point_t.png', self.canvas, container=['T'])
+        obj = Object(pw(40), ph(87), ph(10), ph(10), 'add_point_s.png', self.canvas, container=['S'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(47), ph(87), ph(10), ph(10), 'add_point_rs.png', self.canvas, container=['RS'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(54), ph(87), ph(10), ph(10), 'add_point_lt.png', self.canvas, container=['LT'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(61), ph(87), ph(10), ph(10), 'add_point_t.png', self.canvas, container=['T'])
+        self.adding_group.add_objects(obj)
+        obj = Object(pw(68), ph(87), ph(10), ph(10), 'add_point_rt.png', self.canvas, container=['RT'])
         self.adding_group.add_objects(obj)
 
     def temporarily_hide_points(self, *args):
