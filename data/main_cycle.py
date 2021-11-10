@@ -171,7 +171,7 @@ class MainCycle:
     def restart_graphic(self, *args):
         self.graphic.restart_graphic()
         self.obj_graphic.reset_all_points()
-
+        self.update_graph_data()
 
     def update_graph_data(self):
         self.graphic.find_heart_rate()
