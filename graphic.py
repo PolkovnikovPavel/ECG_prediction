@@ -24,6 +24,7 @@ class Graphic:
         """
         # Параметры изображения
         self.dict_of_points = {}
+        self.base_dict_of_points = {}
         self.dict_of_intervals = {}
         self.speed_of_ecg = speed
 
@@ -61,34 +62,38 @@ class Graphic:
         dict_of_points = copy.deepcopy(self.dict_of_points)
 
         list_of_intervals = []
+        dict_of_points['LP'].sort()
+        dict_of_points['RT'].sort()
         if len(dict_of_points['LP']) == 0 or len(dict_of_points['RT']) == 0:  # Здесь и далее - проверки на то, что
             # такие интервалы вообще существуют (хватает ли точек для определения интервалов)
             list_of_intervals = [0]
         else:
-            for i in range(len(dict_of_points['LP'])):
+            for i in range(len(dict_of_points['RT'])):
                 if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
-                    list_of_intervals.append(abs(dict_of_points['LP'][0][0]-dict_of_points['RT'][0][0]))
+                    list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
                     del dict_of_points['LP'][0]
                     del dict_of_points['RT'][0]
         self.dict_of_intervals['TP'] = list_of_intervals
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
+        dict_of_points['R'].sort()
         if len(dict_of_points['R']) < 2:
             list_of_intervals = [0]
         else:
             for i in range(len(dict_of_points['R']) - 1):
                 if len(dict_of_points['R']) > 1:
-                    list_of_intervals.append(abs(dict_of_points['R'][0][0]-dict_of_points['R'][1][0]))
+                    list_of_intervals.append(abs(dict_of_points['R'][0][0] - dict_of_points['R'][1][0]))
                     del dict_of_points['R'][0]
         self.dict_of_intervals['RR'] = list_of_intervals
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
+        dict_of_points['LP'].sort()
         if len(dict_of_points['LP']) < 2:
             list_of_intervals = [0]
         else:
-            for i in range(len(dict_of_points['LP'])-1):
+            for i in range(len(dict_of_points['LP']) - 1):
                 if len(dict_of_points['LP']) > 1:
                     list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['LP'][1][0]))
                     del dict_of_points['LP'][0]
@@ -96,6 +101,8 @@ class Graphic:
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
+        dict_of_points['LP'].sort()
+        dict_of_points['Q'].sort()
         if len(dict_of_points['LP']) == 0 or len(dict_of_points['Q']) == 0:
             list_of_intervals = [0]
         else:
@@ -112,6 +119,8 @@ class Graphic:
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
+        dict_of_points['RT'].sort()
+        dict_of_points['Q'].sort()
         if len(dict_of_points['Q']) == 0 or len(dict_of_points['RT']) == 0:
             list_of_intervals = [0]
         else:
@@ -128,6 +137,8 @@ class Graphic:
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
+        dict_of_points['RS'].sort()
+        dict_of_points['Q'].sort()
         if len(dict_of_points['Q']) == 0 or len(dict_of_points['RS']) == 0:
             list_of_intervals = [0]
         else:
@@ -144,6 +155,8 @@ class Graphic:
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
         list_of_intervals = []
+        dict_of_points['R'].sort()
+        dict_of_points['Q'].sort()
         if len(dict_of_points['Q']) == 0 or len(dict_of_points['R']) == 0:
             list_of_intervals = [0]
         else:
@@ -336,7 +349,7 @@ class Graphic:
         self.__length_of_square = average_length
 
         # Проверка на то, большие клеточки распознал алгоритм, или маленькие
-        if blur_img.shape[0]/average_length > 15:
+        if blur_img.shape[0] / average_length > 15:
             self.__are_squares_big = False
         else:
             self.__are_squares_big = True
@@ -874,6 +887,7 @@ class Graphic:
 
         self.__defining_intervals_t_p()
         self.__defining_intervals_s_t()
+        self.base_dict_of_points = copy.deepcopy(self.dict_of_points)
 
     def __is_r_distance_equal(self):
         """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R, и присваивает __length_of_rs_in_mm
@@ -883,20 +897,20 @@ class Graphic:
         self.dict_of_points['R'].sort()
         self.__is_equal = True
         try:
-            average_distance = self.dict_of_points['R'][1][0]-self.dict_of_points['R'][0][0]
+            average_distance = self.dict_of_points['R'][1][0] - self.dict_of_points['R'][0][0]
         except IndexError:
             print('Недостаточно точек R для определения результата. Функция is_r_distance_equal.')
         else:
             interval = average_distance
             # В этом цикле за 1 проход вычисляются интервалы и определяется, равные ли расстояния между ними
             for i in range(1, len(self.dict_of_points['R']) - 1):
-                if not ((self.dict_of_points['R'][i+1][0]-self.dict_of_points['R'][i][0]) -
-                        (self.dict_of_points['R'][i+1][0]-self.dict_of_points['R'][i][0]*0.1) <= interval <=
-                        (self.dict_of_points['R'][i+1][0]-self.dict_of_points['R'][i][0]) +
-                        (self.dict_of_points['R'][i+1][0]-self.dict_of_points['R'][i][0]*0.1)):
+                if not (((self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) -
+                         (self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) * 0.1) <= interval <=
+                        ((self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) +
+                         (self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) * 0.1)):
                     self.__is_equal = False
-                interval = self.dict_of_points['R'][i+1][0]-self.dict_of_points['R'][i][0]
-                average_distance += self.dict_of_points['R'][i+1][0]-self.dict_of_points['R'][i][0]
+                interval = self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]
+                average_distance += self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]
 
             if len(self.dict_of_points['R']) == 2:  # Т.е. если у нас всего 2 вершины R
                 self.__is_equal = True
@@ -932,20 +946,20 @@ class Graphic:
                 if self.__are_squares_big:
                     if self.speed_of_ecg == 25:
                         # интервал_в_секундах = интервал_в_пикселях/длина_клеточки_в_пикселях*время_клеточки
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j]/self.__length_of_square
+                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
                                                              * 0.2, 2)  # Размер одной большой клеточки - 0.5 см или
                         # 0,2 секунды
                     else:
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j]/self.__length_of_square
+                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
                                                              * 0.1, 2)  # Размер одной большой клеточки - 0.5 см
                         # или 0,1 секунды
                 else:
                     if self.speed_of_ecg == 25:
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j]/self.__length_of_square
+                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
                                                              * 0.04, 2)  # Размер одной маленькой клеточки - 0,1 см
                         # или 0,04 секунды
                     else:
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j]/self.__length_of_square
+                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
                                                              * 0.02, 2)  # Размер одной одной маленькой клеточки -
                         # 0,1 см или 0,02 секунды
 

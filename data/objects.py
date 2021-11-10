@@ -2,7 +2,7 @@ import tkinter, random
 from app_images.images import *
 
 
-class Object():
+class Object:
     def __init__(self, x, y, w, h, img, canvas, visibility=True, container=[], mode_coord=False):
         self.container = container
         self.x = x
@@ -32,7 +32,6 @@ class Object():
                 self.obj = self.canvas.create_image((self.x + 0.5 * self.w, self.y + 0.5 * self.h), image=self.img)
         else:
             self.obj = self.img
-
 
     def change_img(self, new_img, w, h):
         if not self.mode_coord:
@@ -91,11 +90,11 @@ class Object():
 
     def check_point(self, x, y):
         if self.mode_coord:
-            if (x >= self.x - (self.w / 2) and x <= self.x + (self.w / 2) and
-                    y >= self.y - (self.h / 2) and y <= self.y + (self.h / 2)):
+            if (self.x - (self.w / 2) <= x <= self.x + (self.w / 2) and
+                    self.y - (self.h / 2) <= y <= self.y + (self.h / 2)):
                 return True
         else:
-            if x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h:
+            if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
                 return True
         return False
 
@@ -103,7 +102,7 @@ class Object():
 class Button(Object):
     def __init__(self, x, y, w, h, img, canvas, img2=None, function=None, args=[], visibility=True, container=[]):
         Object.__init__(self, x, y, w, h, img, canvas, visibility=visibility, container=container)
-        self.is_clik = False
+        self.is_click = False
         if type(img2) == str:
             self.img2 = get_image(img2, w, h)
         else:
@@ -117,40 +116,40 @@ class Button(Object):
 
     def hide(self):
         Object.hide(self)
-        self.is_clik = False
-
+        self.is_click = False
 
     def show(self):
         Object.show(self)
-        self.is_clik = False
+        self.is_click = False
 
-    def check(self, x, y, is_clik=True):
+    def check(self, x, y, is_click=True):
         if not self.visibility:
             return
         if self.check_point(x, y):
-            if is_clik:
-                if not self.is_clik:
-                    self.is_clik = True
+            if is_click:
+                if not self.is_click:
+                    self.is_click = True
                     if self.img2 is not None:
                         self.canvas.delete(self.obj)
-                        self.obj = self.canvas.create_image((self.x + 0.5 * self.w, self.y + 0.5 * self.h), image=self.img2)
+                        self.obj = self.canvas.create_image((self.x + 0.5 * self.w, self.y + 0.5 * self.h),
+                                                            image=self.img2)
 
             else:
-                if self.is_clik:
-                    self.is_clik = False
+                if self.is_click:
+                    self.is_click = False
                     if self.img2 is not None:
                         self.canvas.delete(self.obj)
                         self.create_obj()
                     self.press()
         else:
-            if self.is_clik:
-                self.is_clik = False
+            if self.is_click:
+                self.is_click = False
                 if self.img2 is not None:
                     self.canvas.delete(self.obj)
                     self.create_obj()
 
 
-class Text():
+class Text:
     def __init__(self, x, y, text, canvas, font='Times 25 italic bold', visibility=True):
         self.x = x
         self.y = y
@@ -192,7 +191,7 @@ class Text():
         self.y += dy
 
 
-class Group():
+class Group:
     def __init__(self):
         self.all_objects = []
         self.visibility = True
@@ -222,12 +221,12 @@ class Group():
         for object in self.all_objects:
             object.show()
 
-    def check(self, x, y, is_clik=True):
+    def check(self, x, y, is_click=True):
         if not self.visibility:
             return
         for object in self.all_objects:
             if isinstance(object, Button) or isinstance(object, ObjectGraphic):
-                object.check(x, y, is_clik)
+                object.check(x, y, is_click)
 
 
 class Point(Object):
@@ -251,13 +250,12 @@ class Point(Object):
         self.old_y = y
         self.is_hurt_trash = False
 
-
-    def check(self, x, y, is_clik=True, is_taken_one=False):
+    def check(self, x, y, is_click=True, is_taken_one=False):
         if not self.visibility:
             return
 
         if self.is_moving:
-            if is_clik:
+            if is_click:
                 self.go_to(x, y)
             else:
                 if self.graphic.trash.check_point(self.x, self.y):
@@ -272,7 +270,7 @@ class Point(Object):
                 self.point[1] += dy * (self.graphic.img_h / self.graphic.h)
                 self.graphic.scan_graphic()
         else:
-            if is_clik:
+            if is_click:
                 if self.check_point(x, y) and not is_taken_one and not self.graphic.point_is_taken:
                     self.is_moving = True
                     self.graphic.point_is_taken = True
@@ -345,6 +343,31 @@ class ObjectGraphic:
         obj = Object(pw(68), ph(87), ph(10), ph(10), 'add_point_rt.png', self.canvas, container=['RT'])
         self.adding_group.add_objects(obj)
 
+    def rewrite_points(self, list_of_base_points):
+        iterator_var = 2
+
+        for key in self.dict_of_points:
+            for point in self.graphic.dict_of_points[key]:
+                x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
+                x, y = x + self.x, y + self.y
+                if iterator_var < len(self.group.all_objects):
+                    self.group.all_objects[iterator_var].go_to(x, y)
+                    iterator_var += 1
+
+        while list_of_base_points != self.group.all_objects:
+            for point in self.group.all_objects:
+                try:
+                    list_of_base_points.index(point)
+                except Exception:
+                    try:
+                        del self.group.all_objects[self.group.all_objects.index(point)]
+                    except ValueError:
+                        print("Нет такого объекта в self.group.all_objects")
+                    try:
+                        del self.dict_of_points[point.type_point][self.dict_of_points[point.type_point].index(point)]
+                    except ValueError:
+                        print("Нет такого значения в self.dict_of_points")
+
     def temporarily_hide_points(self, *args):
         obj = args[0]
         for key in self.dict_of_points:
@@ -385,7 +408,7 @@ class ObjectGraphic:
         self.adding_group.hide_all()
 
     def check_point(self, x, y):
-        if x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h:
+        if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
             return True
         return False
 
@@ -415,9 +438,3 @@ class ObjectGraphic:
                 point.check(x, y, is_click, is_taken_one)
 
         self.is_click = is_click
-
-
-
-
-
-
