@@ -24,6 +24,7 @@ class Graphic:
         """
         # Параметры изображения
         self.dict_of_points = {}
+        self.__reserve_dict_of_points = {}
         self.dict_of_intervals = {}
         self.speed_of_ecg = speed
 
@@ -874,6 +875,7 @@ class Graphic:
 
         self.__defining_intervals_t_p()
         self.__defining_intervals_s_t()
+        self.__reserve_dict_of_points = copy.deepcopy(self.dict_of_points)
 
     def __is_r_distance_equal(self):
         """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R, и присваивает __length_of_rs_in_mm
@@ -996,10 +998,19 @@ class Graphic:
         interval_rr = sum(self.dict_of_intervals['RR']) / len(self.dict_of_intervals['RR'])
         return interval_rr / average_w
 
+    def restart_graphic(self):
+        """Перезагружает весь график, тоесть стирает все изменения
+
+        :return: None
+        """
+        self.dict_of_points = copy.deepcopy(self.__reserve_dict_of_points)
+        self.find_intervals()
+
+
     def find_intervals(self):
         """Процедура, объединяющая все действия по нахождению интервалов
 
         :return: None"""
         self.__get_intervals()
         self.__convert_intervals_lengths_from_pixels_to_seconds()
-        self.__is_r_distance_equal()
+        self.find_heart_rate()

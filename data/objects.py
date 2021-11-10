@@ -374,6 +374,19 @@ class ObjectGraphic:
             self.dict_of_points[key] = new_list
         self.scan_graphic()
 
+    def reset_all_points(self):
+        for key in self.dict_of_points:
+            for i in range(len(self.graphic.dict_of_points[key])):
+                point = self.graphic.dict_of_points[key][i]
+                obj = self.dict_of_points[key][i]
+                x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
+                x, y = x + self.x, y + self.y
+                obj.go_to(x, y)
+            if len(self.dict_of_points[key]) > len(self.graphic.dict_of_points[key]):
+                for i in range(len(self.graphic.dict_of_points[key]), len(self.dict_of_points[key])):
+                    self.del_point(self.dict_of_points[key][i])
+
+
     def show(self):
         self.visibility = True
         self.group.show_all()

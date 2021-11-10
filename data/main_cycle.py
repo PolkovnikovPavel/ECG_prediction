@@ -129,7 +129,7 @@ class MainCycle:
         self.view_grope.add_objects(btn)
 
         btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, 'restart_2.png',
-                     function=self.start_scanning, container=[False], visibility=False)
+                     function=self.restart_graphic, container=[False], visibility=False)
         self.view_grope.add_objects(btn)
 
         self.mode_switcher = Button(pw(25), ph(1.5), ph(14), ph(7), 'switch_mode.png', self.canvas,
@@ -167,6 +167,11 @@ class MainCycle:
         self.graphic = Graphic(self.file_name, self.peed_reading)
         self.graphic.graph_detection()
         self.start_view_menu()
+
+    def restart_graphic(self, *args):
+        self.graphic.restart_graphic()
+        self.obj_graphic.reset_all_points()
+
 
     def update_graph_data(self):
         self.graphic.find_heart_rate()
