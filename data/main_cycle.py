@@ -6,9 +6,9 @@ from graphic import Graphic
 
 
 class MainCycle:
-    def __init__(self, canvas, all_gropes):
+    def __init__(self, canvas, all_groups):
         self.canvas = canvas
-        self.all_gropes = all_gropes
+        self.all_groups = all_groups
         self.__timer = time.time()
         self.__running = True
         self.type_menu = 'main_menu'
@@ -22,13 +22,13 @@ class MainCycle:
         self.ruler = None
         self.file_name = ''
         self.graphic = None
-        self.peed_reading = 25
+        self.speed_reading = 25
 
         self.__create_all_gropes()
 
     def __create_all_gropes(self):
-        self.main_grope = self.all_gropes[0]
-        self.view_grope = self.all_gropes[1]
+        self.main_group = self.all_groups[0]
+        self.view_group = self.all_groups[1]
 
     def start(self):
         while self.__running:
@@ -56,7 +56,7 @@ class MainCycle:
     def mouse_move(self, event, *args):
         self.mouse_x = event.x
         self.mouse_y = event.y
-        self.view_grope.check(self.mouse_x, self.mouse_y, is_clik=self.is_click)
+        self.view_group.check(self.mouse_x, self.mouse_y, is_click=self.is_click)
         if self.type_menu == 'view_menu':
             if self.is_result:
                 if not self.obj_result.check_point(self.mouse_x, self.mouse_y):
@@ -70,7 +70,8 @@ class MainCycle:
                 self.canvas.delete(self.ruler[2])
                 self.canvas.delete(self.ruler[3])
                 line1 = self.canvas.create_line(self.ruler[0], self.ruler[1], self.mouse_x, self.mouse_y, width=ph(0.4))
-                line2 = self.canvas.create_line(self.ruler[0], self.ruler[1], self.mouse_x, self.ruler[1], width=ph(0.3),
+                line2 = self.canvas.create_line(self.ruler[0], self.ruler[1], self.mouse_x, self.ruler[1],
+                                                width=ph(0.3),
                                                 dash=(ph(0.7), ph(0.3)))
                 text = self.ruler[4]
                 text.set_new_text(str(round(
@@ -85,13 +86,13 @@ class MainCycle:
         self.is_click = True
         self.old_mouse_x = self.mouse_x
         self.old_mouse_y = self.mouse_y
-        for grope in self.all_gropes:
-            grope.check(self.mouse_x, self.mouse_y, is_clik=True)
+        for group in self.all_groups:
+            group.check(self.mouse_x, self.mouse_y, is_click=True)
 
     def click_out(self, event, *args):
         self.is_click = False
-        for grope in self.all_gropes:
-            grope.check(self.mouse_x, self.mouse_y, is_clik=False)
+        for group in self.all_groups:
+            group.check(self.mouse_x, self.mouse_y, is_click=False)
 
     def right_click(self, event, *args):
         self.mouse_x = event.x
@@ -105,28 +106,28 @@ class MainCycle:
 
         if self.type_menu == 'view_menu':
             line1 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.4))
-            line2 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.3), dash=(pw(1.2), ph(0.4)))
+            line2 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.3),
+                                            dash=(pw(1.2), ph(0.4)))
             text = Text(self.mouse_x, self.mouse_y - ph(4), '0 сек.', self.canvas, font=f'Times {ph(3)} italic bold')
             self.ruler = [self.mouse_x, self.mouse_y, line1, line2, text]
-
 
     def right_click_out(self, event, *args):
         self.is_right_click = False
 
     def start_main_menu(self, *args):
         self.type_menu = 'main_menu'
-        self.main_grope.show_all()
+        self.main_group.show_all()
 
     def start_view_menu(self, *args):
         self.type_menu = 'view_menu'
-        self.view_grope.delete()
+        self.view_group.delete()
         bg = Object(0, 0, pw(100), ph(100), 'background_view_menu.png', self.canvas)
-        self.view_grope.add_objects(bg)
+        self.view_group.add_objects(bg)
 
         btn = Button(pw(94), ph(2), ph(6), ph(6), 'question_button.png', self.canvas,
                      function=self.show_hide_instruction, container=[False], visibility=False)
         btn.args = btn
-        self.view_grope.add_objects(btn)
+        self.view_group.add_objects(btn)
 
         btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, 'restart_2.png',
                      function=self.restart_graphic, container=[False], visibility=False)
@@ -134,27 +135,27 @@ class MainCycle:
 
         self.mode_switcher = Button(pw(25), ph(1.5), ph(14), ph(7), 'switch_mode.png', self.canvas,
                      function=self.set_speed_50, container=[False])
-        self.view_grope.add_objects(self.mode_switcher)
+        self.view_group.add_objects(self.mode_switcher)
 
         btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png', self.start_main_menu)
-        self.view_grope.add_objects(btn)
+        self.view_group.add_objects(btn)
         self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75), scan_graphic=self.scan_graphic)
-        self.view_grope.add_objects(self.obj_graphic)
+        self.view_group.add_objects(self.obj_graphic)
 
         btn = Button(pw(86), ph(2.5), ph(5), ph(5), 'hide_points.png', self.canvas,
                      function=self.obj_graphic.temporarily_hide_points)
         btn.args = btn
-        self.view_grope.add_objects(btn)
+        self.view_group.add_objects(btn)
 
 
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
-        self.view_grope.add_objects(self.obj_result)
+        self.view_group.add_objects(self.obj_result)
 
         self.text_css = Text(pw(73), ph(5), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas, font=f'Times {ph(3)} italic bold', visibility=False)
-        self.view_grope.add_objects(self.text_css)
+        self.view_group.add_objects(self.text_css)
 
-        self.view_grope.show_all()
-        self.main_grope.hide_all()
+        self.view_group.show_all()
+        self.main_group.hide_all()
 
     def set_file_name(self, *args):
         filename = askopenfilename()
@@ -164,7 +165,7 @@ class MainCycle:
     def start_scanning(self, *args):
         if not self.file_name:
             return
-        self.graphic = Graphic(self.file_name, self.peed_reading)
+        self.graphic = Graphic(self.file_name, self.speed_reading)
         self.graphic.graph_detection()
         self.start_view_menu()
 
@@ -212,13 +213,12 @@ class MainCycle:
         self.mode_switcher.change_img('switch_mode.png', ph(14), ph(7))
         self.mode_switcher.function = self.set_speed_50
         self.graphic.speed_of_ecg = 25
-        self.peed_reading = 25
+        self.speed_reading = 25
         self.update_graph_data()
 
     def set_speed_50(self, *args):
         self.mode_switcher.change_img('switch_mode_2.png', ph(14), ph(7))
         self.mode_switcher.function = self.set_speed_25
         self.graphic.speed_of_ecg = 50
-        self.peed_reading = 50
+        self.speed_reading = 50
         self.update_graph_data()
-
