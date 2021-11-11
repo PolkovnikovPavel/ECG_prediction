@@ -121,6 +121,7 @@ class MainCycle:
     def start_view_menu(self, *args):
         self.type_menu = 'view_menu'
         self.view_group.delete()
+
         bg = Object(0, 0, pw(100), ph(100), 'background_view_menu.png', self.canvas)
         self.view_group.add_objects(bg)
 
@@ -131,7 +132,7 @@ class MainCycle:
 
         btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, 'restart_2.png',
                      function=self.restart_graphic, container=[False], visibility=False)
-        self.view_grope.add_objects(btn)
+        self.view_group.add_objects(btn)
 
         self.mode_switcher = Button(pw(25), ph(1.5), ph(14), ph(7), 'switch_mode.png', self.canvas,
                      function=self.set_speed_50, container=[False])
@@ -139,6 +140,7 @@ class MainCycle:
 
         btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png', self.start_main_menu)
         self.view_group.add_objects(btn)
+
         self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75), scan_graphic=self.scan_graphic)
         self.view_group.add_objects(self.obj_graphic)
 
@@ -146,7 +148,6 @@ class MainCycle:
                      function=self.obj_graphic.temporarily_hide_points)
         btn.args = btn
         self.view_group.add_objects(btn)
-
 
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_group.add_objects(self.obj_result)

@@ -343,31 +343,6 @@ class ObjectGraphic:
         obj = Object(pw(68), ph(87), ph(10), ph(10), 'add_point_rt.png', self.canvas, container=['RT'])
         self.adding_group.add_objects(obj)
 
-    def rewrite_points(self, list_of_base_points):
-        iterator_var = 2
-
-        for key in self.dict_of_points:
-            for point in self.graphic.dict_of_points[key]:
-                x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
-                x, y = x + self.x, y + self.y
-                if iterator_var < len(self.group.all_objects):
-                    self.group.all_objects[iterator_var].go_to(x, y)
-                    iterator_var += 1
-
-        while list_of_base_points != self.group.all_objects:
-            for point in self.group.all_objects:
-                try:
-                    list_of_base_points.index(point)
-                except Exception:
-                    try:
-                        del self.group.all_objects[self.group.all_objects.index(point)]
-                    except ValueError:
-                        print("Нет такого объекта в self.group.all_objects")
-                    try:
-                        del self.dict_of_points[point.type_point][self.dict_of_points[point.type_point].index(point)]
-                    except ValueError:
-                        print("Нет такого значения в self.dict_of_points")
-
     def temporarily_hide_points(self, *args):
         obj = args[0]
         for key in self.dict_of_points:
@@ -408,7 +383,6 @@ class ObjectGraphic:
             if len(self.dict_of_points[key]) > len(self.graphic.dict_of_points[key]):
                 for i in range(len(self.graphic.dict_of_points[key]), len(self.dict_of_points[key])):
                     self.del_point(self.dict_of_points[key][i])
-
 
     def show(self):
         self.visibility = True
