@@ -72,9 +72,15 @@ class Graphic:
                 if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
                     if dict_of_points['LP'][0][0] < dict_of_points['RT'][0][0]:
                         del dict_of_points['LP'][0]
-                    list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
-                    del dict_of_points['LP'][0]
-                    del dict_of_points['RT'][0]
+                    try:
+                        list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
+                    except BaseException:
+                        print('Нарушен порядок точек ЛП и РТ.')
+                        list_of_intervals = [0]
+                        break
+                    else:
+                        del dict_of_points['LP'][0]
+                        del dict_of_points['RT'][0]
         self.dict_of_intervals['TP'] = list_of_intervals
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
