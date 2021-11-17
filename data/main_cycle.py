@@ -173,6 +173,11 @@ class MainCycle:
     def restart_graphic(self, *args):
         self.graphic.restart_graphic()
         self.obj_graphic.reset_all_points()
+        if self.ruler is not None:
+            self.canvas.delete(self.ruler[2])
+            self.canvas.delete(self.ruler[3])
+            self.ruler[4].hide()
+            self.ruler = None
         self.update_graph_data()
 
     def update_graph_data(self):
