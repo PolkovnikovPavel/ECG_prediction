@@ -40,8 +40,11 @@ class Graphic:
         self.heart_rate = 0
         self.prediction = ''
 
-    def get_img(self, flag=cv.IMREAD_UNCHANGED):
-        return cv.imdecode(np.fromfile(self.image_full_name, dtype=np.uint8), flag)  # Чтение изображения
+    def get_img(self, flag=cv.IMREAD_UNCHANGED, any_path=None):
+        if any_path is None:
+            return cv.imdecode(np.fromfile(self.image_full_name, dtype=np.uint8), flag)  # Чтение изображения
+        else:
+            return cv.imdecode(np.fromfile(any_path, dtype=np.uint8), flag)  # Чтение изображения
 
     def graph_detection(self):
         """Main-функция.
@@ -302,12 +305,17 @@ class Graphic:
         if is_show:
             cv.imshow('result', blur_img)
             cv.waitKey(0)
-        path_to_temp_img = '.'.join(self.image_full_name.split('.')[:-1]) + '_w-o_graphic.jpeg'  # временное сохранение
-        cv.imwrite(path_to_temp_img, blur_img)
+
+        destination = '/'.join(self.image_full_name.split('/')[:-1])
+        gel = 'temp_w-o_graphic.jpeg'
+        script_path = os.getcwd()
+        os.chdir(destination)
+        cv.imwrite(gel, blur_img)
 
         # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
-        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file=path_to_temp_img)
-        os.remove(path_to_temp_img)
+        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file='temp_w-o_graphic.jpeg')
+        os.remove('temp_w-o_graphic.jpeg')
+        os.chdir(script_path)
 
         # Выделяем контуры клеточек
         (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
