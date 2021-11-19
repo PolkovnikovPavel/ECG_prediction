@@ -264,7 +264,6 @@ class Graphic:
         if is_show:
             cv.imshow("Filtered", img_with_filter)  # Показ изображения
             cv.waitKey(0)
-        cv.imwrite(f'images/temp-Otsus.jpeg', img_with_filter)  # Сохранение изображения
 
         self.__img_otsus_method = img_with_filter
         return img_with_filter
@@ -303,10 +302,12 @@ class Graphic:
         if is_show:
             cv.imshow('result', blur_img)
             cv.waitKey(0)
-        cv.imwrite('images/temp_w-o_graphic.jpeg', blur_img)
+        path_to_temp_img = '.'.join(self.image_full_name.split('.')[:-1]) + '_w-o_graphic.jpeg'  # временное сохранение
+        cv.imwrite(path_to_temp_img, blur_img)
 
         # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
-        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file='images/temp_w-o_graphic.jpeg')
+        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file=path_to_temp_img)
+        os.remove(path_to_temp_img)
 
         # Выделяем контуры клеточек
         (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
