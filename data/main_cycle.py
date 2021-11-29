@@ -46,6 +46,8 @@ class MainCycle:
 
     def close_window(self, *args):
         self.__running = False
+        self.main_group.hide_all()
+        self.view_group.hide_all()
 
     def get_running(self):
         return self.__running

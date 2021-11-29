@@ -4,7 +4,6 @@ from data.main_cycle import *
 from data.objects import *
 from graphic import Graphic
 
-
 # имеет смысл только при полном экране (оно меняет временно разришение экрана)
 # print(ScreenRes.get_modes())
 # x = ScreenRes.get_modes()
@@ -14,6 +13,8 @@ from graphic import Graphic
 
 # ▼ инициализация ▼
 master = tkinter.Tk()
+master.iconbitmap('app_images/Logo.ico')
+master.title('ЭКГ помощник')
 # master.attributes('-fullscreen', True)  # полный экран
 screen_w = 1280  # master.winfo_screenwidth()
 screen_h = 720  # master.winfo_screenheight()
@@ -24,26 +25,28 @@ master.resizable(False, False)
 
 print(screen_w, screen_h)
 
-
 all_gropes = []
 
-main_grope = Group()
-all_gropes.append(main_grope)
+main_group = Group()
+all_gropes.append(main_group)
 view_grope = Group()
 all_gropes.append(view_grope)
 main_cycle = MainCycle(canvas, all_gropes)
 
-
 bg = Object(0, 0, pw(100), ph(100), 'background.png', canvas)  # с этого места идёт создание необходимых объектов
-main_grope.add_objects(bg)
+main_group.add_objects(bg)
 exit_btn = Button(pw(95), ph(3), ph(6), ph(6), 'exit_button.png', canvas, 'exit_button_2.png', main_cycle.close_window)
-main_grope.add_objects(exit_btn)
+main_group.add_objects(exit_btn)
 
 btn = Button(pw(28), ph(44), ph(12), ph(12), 'open_file.png', canvas, 'open_file_2.png', main_cycle.set_file_name)
-main_grope.add_objects(btn)
+main_group.add_objects(btn)
 
-btn = Button(pw(40), ph(44.5), pw(20), pw(6), 'start_scanning.png', canvas, 'start_scanning_2.png', main_cycle.start_scanning)
-main_grope.add_objects(btn)
+btn = Button(pw(40), ph(44.5), pw(20), pw(6), 'start_scanning.png', canvas, 'start_scanning_2.png',
+             main_cycle.start_scanning)
+main_group.add_objects(btn)
+
+main_group.add_objects(Text(pw(20), ph(95), f'Сергей - puhovskijsa@kuzstu.ru\nПавел - pavelpolkovnikov334@gmail.com', canvas,
+                            font=f'Times {ph(3)} bold', visibility=True, color='#96AABF'))
 
 master.protocol("WM_DELETE_WINDOW", main_cycle.close_window)  # ▼ всё что ниже - неизменно ▼
 master.bind('<Motion>', main_cycle.mouse_move)

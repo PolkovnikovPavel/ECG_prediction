@@ -150,7 +150,8 @@ class Button(Object):
 
 
 class Text:
-    def __init__(self, x, y, text, canvas, font='Times 25 italic bold', visibility=True):
+    def __init__(self, x, y, text, canvas, font='Times 25 italic bold', visibility=True, color='black'):
+        self.color = color
         self.x = x
         self.y = y
         self.visibility = visibility
@@ -163,7 +164,7 @@ class Text:
             self.obj = None
 
     def create_obj(self):
-        self.obj = self.canvas.create_text(self.x, self.y, font=self.font, text=self.text)
+        self.obj = self.canvas.create_text(self.x, self.y, fill=self.color, font=self.font, text=self.text)
 
     def hide(self):
         self.canvas.delete(self.obj)
