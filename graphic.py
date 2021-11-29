@@ -40,8 +40,11 @@ class Graphic:
         self.heart_rate = 0
         self.prediction = ''
 
-    def get_img(self, flag=cv.IMREAD_UNCHANGED):
-        return cv.imdecode(np.fromfile(self.image_full_name, dtype=np.uint8), flag)  # Чтение изображения
+    def get_img(self, flag=cv.IMREAD_UNCHANGED, any_path=None):
+        if any_path is None:
+            return cv.imdecode(np.fromfile(self.image_full_name, dtype=np.uint8), flag)  # Чтение изображения
+        else:
+            return cv.imdecode(np.fromfile(any_path, dtype=np.uint8), flag)  # Чтение изображения
 
     def graph_detection(self):
         """Main-функция.
@@ -72,9 +75,15 @@ class Graphic:
                 if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
                     if dict_of_points['LP'][0][0] < dict_of_points['RT'][0][0]:
                         del dict_of_points['LP'][0]
-                    list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
-                    del dict_of_points['LP'][0]
-                    del dict_of_points['RT'][0]
+                    try:
+                        list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
+                    except BaseException:
+                        print('Нарушен порядок точек ЛП и РТ.')
+                        list_of_intervals = [0]
+                        break
+                    else:
+                        del dict_of_points['LP'][0]
+                        del dict_of_points['RT'][0]
         self.dict_of_intervals['TP'] = list_of_intervals
 
         dict_of_points = copy.deepcopy(self.dict_of_points)
@@ -258,7 +267,6 @@ class Graphic:
         if is_show:
             cv.imshow("Filtered", img_with_filter)  # Показ изображения
             cv.waitKey(0)
-        cv.imwrite(f'images/temp-Otsus.jpeg', img_with_filter)  # Сохранение изображения
 
         self.__img_otsus_method = img_with_filter
         return img_with_filter
@@ -297,10 +305,17 @@ class Graphic:
         if is_show:
             cv.imshow('result', blur_img)
             cv.waitKey(0)
-        cv.imwrite('images/temp_w-o_graphic.jpeg', blur_img)
+
+        destination = '/'.join(self.image_full_name.split('/')[:-1])
+        gel = 'temp_w-o_graphic.jpeg'
+        script_path = os.getcwd()
+        os.chdir(destination)
+        cv.imwrite(gel, blur_img)
 
         # Пропускаем ещё раз через фильтр Оцу, чтобы выделить клеточки
-        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file='images/temp_w-o_graphic.jpeg')
+        img_with_out_graphic_otsus = self.__otsus_method(False, path_to_file='temp_w-o_graphic.jpeg')
+        os.remove('temp_w-o_graphic.jpeg')
+        os.chdir(script_path)
 
         # Выделяем контуры клеточек
         (contours, hierarchy) = cv.findContours(img_with_out_graphic_otsus.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_NONE)

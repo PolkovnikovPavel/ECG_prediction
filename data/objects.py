@@ -249,6 +249,13 @@ class Point(Object):
         self.old_x = x
         self.old_y = y
         self.is_hurt_trash = False
+        self.start_x = 0
+        self.start_y = 0
+        self.id = None
+
+    # def go_to(self, x, y):
+    #     super().go_to(x, y)
+    #     self.start_x, self.start_y = x, y
 
     def check(self, x, y, is_click=True, is_taken_one=False):
         if not self.visibility:
@@ -317,10 +324,13 @@ class ObjectGraphic:
         self.group.add_objects(self.trash)
 
         for key in self.dict_of_points:
+            it_var = 0
             for point in self.graphic.dict_of_points[key]:
                 x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
                 x, y = x + self.x, y + self.y
                 obj = Point(x, y, ph(4), ph(4), self.canvas, key, point, mode_coord=True, graphic=self)
+                obj.id = it_var
+                it_var += 1
                 self.group.add_objects(obj)
                 self.dict_of_points[key].append(obj)
 
@@ -374,15 +384,40 @@ class ObjectGraphic:
 
     def reset_all_points(self):
         for key in self.dict_of_points:
+            for point in self.dict_of_points[key]:
+                if point.id is None:
+                    try:
+                        self.del_point(point)
+                    except:
+                        pass
+
+        for key in self.dict_of_points:
             for i in range(len(self.graphic.dict_of_points[key])):
-                point = self.graphic.dict_of_points[key][i]
-                obj = self.dict_of_points[key][i]
-                x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
-                x, y = x + self.x, y + self.y
-                obj.go_to(x, y)
-                it_var = len(self.graphic.dict_of_points[key])
-                while len(self.dict_of_points[key]) > len(self.graphic.dict_of_points[key]):
-                    self.del_point(self.dict_of_points[key][it_var])
+                try:
+                    obj = self.dict_of_points[key][i]
+                except IndexError:
+                    point = self.graphic.dict_of_points[key][i]
+                    x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
+                    x, y = x + self.x, y + self.y
+                    self.dict_of_points[key].insert(i, Point(x, y, ph(4), ph(4), self.canvas, key,
+                                                             self.graphic.dict_of_points[key][i], mode_coord=True,
+                                                             graphic=self))
+                    self.dict_of_points[key][i].id = i
+                else:
+                    if obj.id == i:
+                        point = self.graphic.dict_of_points[key][i]
+                        x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
+                        x, y = x + self.x, y + self.y
+                        obj.go_to(x, y)
+                        obj.start_x, obj.start_y = point[0], point[1]
+                    elif obj.id is not None:
+                        point = self.graphic.dict_of_points[key][i]
+                        x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
+                        x, y = x + self.x, y + self.y
+                        self.dict_of_points[key].insert(i, Point(x, y, ph(4), ph(4), self.canvas, key,
+                                                                 self.graphic.dict_of_points[key][i], mode_coord=True,
+                                                                 graphic=self))
+                        self.dict_of_points[key][i].id = i
 
     def show(self):
         self.visibility = True
