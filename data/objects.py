@@ -254,10 +254,6 @@ class Point(Object):
         self.start_y = 0
         self.id = None
 
-    # def go_to(self, x, y):
-    #     super().go_to(x, y)
-    #     self.start_x, self.start_y = x, y
-
     def check(self, x, y, is_click=True, is_taken_one=False):
         if not self.visibility:
             return
@@ -381,7 +377,6 @@ class ObjectGraphic:
                 else:
                     new_list.append(p)
             self.dict_of_points[key] = new_list
-        # self.scan_graphic()
 
     def reset_all_points(self):
         for key in self.dict_of_points:

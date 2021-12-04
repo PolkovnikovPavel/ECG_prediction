@@ -161,7 +161,7 @@ class MainCycle:
         self.main_group.hide_all()
 
     def set_file_name(self, *args):
-        filename = askopenfilename()
+        filename = askopenfilename(filetypes=[('Фотографии ЭКГ', '*jpeg *jpg')])
         self.file_name = filename
         print(self.file_name)
 
