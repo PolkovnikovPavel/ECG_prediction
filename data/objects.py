@@ -150,7 +150,7 @@ class Button(Object):
 
 
 class Text:
-    def __init__(self, x, y, text, canvas, font='Times 25 italic bold', visibility=True, color='black'):
+    def __init__(self, x, y, text, canvas, anchor='nw', font='Times 25 italic bold', visibility=True, color='black'):
         self.color = color
         self.x = x
         self.y = y
@@ -158,13 +158,15 @@ class Text:
         self.text = text
         self.canvas = canvas
         self.font = font
+        self.anchor = anchor
         if self.visibility:
             self.create_obj()
         else:
             self.obj = None
 
     def create_obj(self):
-        self.obj = self.canvas.create_text(self.x, self.y, fill=self.color, font=self.font, text=self.text)
+        self.obj = self.canvas.create_text(self.x, self.y, fill=self.color, font=self.font, text=self.text,
+                                           anchor=self.anchor)
 
     def hide(self):
         self.canvas.delete(self.obj)
@@ -265,6 +267,7 @@ class Point(Object):
                 if self.graphic.trash.check_point(self.x, self.y):
                     self.graphic.del_point(self)
                     self.hide()
+                    self.graphic.scan_graphic()
                     return
 
                 self.is_moving = False

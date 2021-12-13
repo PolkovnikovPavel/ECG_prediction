@@ -917,6 +917,7 @@ class Graphic:
             average_distance = self.dict_of_points['R'][1][0] - self.dict_of_points['R'][0][0]
         except IndexError:
             print('Недостаточно точек R для определения результата. Функция is_r_distance_equal.')
+            self.__length_of_rs_in_mm = 0
         else:
             interval = average_distance
             # В этом цикле за 1 проход вычисляются интервалы и определяется, равные ли расстояния между ними
@@ -948,10 +949,13 @@ class Graphic:
     def find_heart_rate(self):
         """Ищет ЧСС"""
         self.__is_r_distance_equal()
-        if self.speed_of_ecg == 25:
-            self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.04), 2)
+        if self.__length_of_rs_in_mm == 0:
+            self.heart_rate = 0
         else:
-            self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
+            if self.speed_of_ecg == 25:
+                self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.04), 2)
+            else:
+                self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
 
     def __convert_intervals_lengths_from_pixels_to_seconds(self):
         """Как понятно из названия, эта процедура переводит длины интервалов из пикслей в секунды и записывает их заново
