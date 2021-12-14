@@ -150,7 +150,7 @@ class Button(Object):
 
 
 class Text:
-    def __init__(self, x, y, text, canvas, font='Times 25 italic bold', visibility=True, color='black'):
+    def __init__(self, x, y, text, canvas, anchor='nw', font='Times 25 italic bold', visibility=True, color='black'):
         self.color = color
         self.x = x
         self.y = y
@@ -158,13 +158,15 @@ class Text:
         self.text = text
         self.canvas = canvas
         self.font = font
+        self.anchor = anchor
         if self.visibility:
             self.create_obj()
         else:
             self.obj = None
 
     def create_obj(self):
-        self.obj = self.canvas.create_text(self.x, self.y, fill=self.color, font=self.font, text=self.text)
+        self.obj = self.canvas.create_text(self.x, self.y, fill=self.color, font=self.font, text=self.text,
+                                           anchor=self.anchor)
 
     def hide(self):
         self.canvas.delete(self.obj)
@@ -254,10 +256,6 @@ class Point(Object):
         self.start_y = 0
         self.id = None
 
-    # def go_to(self, x, y):
-    #     super().go_to(x, y)
-    #     self.start_x, self.start_y = x, y
-
     def check(self, x, y, is_click=True, is_taken_one=False):
         if not self.visibility:
             return
@@ -269,6 +267,7 @@ class Point(Object):
                 if self.graphic.trash.check_point(self.x, self.y):
                     self.graphic.del_point(self)
                     self.hide()
+                    self.graphic.scan_graphic()
                     return
 
                 self.is_moving = False
@@ -330,7 +329,8 @@ class ObjectGraphic:
                 x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
                 x, y = x + self.x, y + self.y
                 obj = Point(x, y, ph(4), ph(4), self.canvas, key, point, mode_coord=True, graphic=self)
-                obj.id = it_var
+                obj.id = it_var  # С помощью задания этого индификатора здесь можно будет отслеживать добавленные
+                # пользователем точки
                 it_var += 1
                 self.group.add_objects(obj)
                 self.dict_of_points[key].append(obj)
@@ -381,9 +381,10 @@ class ObjectGraphic:
                 else:
                     new_list.append(p)
             self.dict_of_points[key] = new_list
-        # self.scan_graphic()
 
     def reset_all_points(self):
+        # Этот цикл удаляет все точки, добавленные пользователем. Эти точки не имеют у себя значения id. Это значение
+        # появляется только при создании точек в начале обработки
         for key in self.dict_of_points:
             for point in self.dict_of_points[key]:
                 if point.id is None:
@@ -397,6 +398,7 @@ class ObjectGraphic:
                 try:
                     obj = self.dict_of_points[key][i]
                 except IndexError:
+                    # Обработчик ошибок на случай, если пользователь удалил крайнюю точку
                     point = self.graphic.dict_of_points[key][i]
                     x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
                     x, y = x + self.x, y + self.y
@@ -404,14 +406,20 @@ class ObjectGraphic:
                                                              self.graphic.dict_of_points[key][i], mode_coord=True,
                                                              graphic=self))
                     self.dict_of_points[key][i].id = i
+                    pass
                 else:
+                    # Проверка, соответствует ли индентификатор точки её порядковому номеру
                     if obj.id == i:
+                        # Если соответствует, то значит её нужно просто передвинуть
                         point = self.graphic.dict_of_points[key][i]
                         x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
                         x, y = x + self.x, y + self.y
                         obj.go_to(x, y)
                         obj.start_x, obj.start_y = point[0], point[1]
+                        obj.point[0], obj.point[1] = point[0], point[1]
                     elif obj.id is not None:
+                        # Если соответствия нет, видимо пользователь удалил одну из точек. Необходимо добавить новую
+                        # точку в словарь точек
                         point = self.graphic.dict_of_points[key][i]
                         x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
                         x, y = x + self.x, y + self.y

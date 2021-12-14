@@ -1,4 +1,6 @@
 import asyncio, time
+import tkinter
+
 from data.functions import pw, ph
 from data.objects import *
 from tkinter.filedialog import askopenfilename
@@ -154,14 +156,15 @@ class MainCycle:
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_group.add_objects(self.obj_result)
 
-        self.text_css = Text(pw(73), ph(5), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas, font=f'Times {ph(3)} italic bold', visibility=False)
+        self.text_css = Text(pw(80), ph(3), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas, anchor='ne',
+                             font=f'Times {ph(3)} italic bold', visibility=False)
         self.view_group.add_objects(self.text_css)
 
         self.view_group.show_all()
         self.main_group.hide_all()
 
     def set_file_name(self, *args):
-        filename = askopenfilename()
+        filename = askopenfilename(filetypes=[('Фотографии ЭКГ', '*jpeg *jpg')])
         self.file_name = filename
         print(self.file_name)
 
@@ -183,7 +186,6 @@ class MainCycle:
         self.update_graph_data()
 
     def update_graph_data(self):
-        self.graphic.find_heart_rate()
         self.graphic.find_intervals()
         self.text_css.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
 
@@ -210,7 +212,7 @@ class MainCycle:
         self.obj_result.change_img('button_result_2.png', pw(50), ph(50))
         self.obj_result.go_to(pw(45), ph(47))
         text = self.graphic.get_text_of_general_information()
-        self.test_result = Text(pw(70), ph(75), text, self.canvas, font=f'Times {ph(2)} italic bold')
+        self.test_result = Text(pw(50), ph(55), text, self.canvas, font=f'Times {ph(2)} italic bold')
 
     def hide_result(self):
         self.obj_result.change_img('button_result.png', pw(10), ph(10))
