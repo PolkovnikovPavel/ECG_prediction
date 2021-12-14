@@ -388,24 +388,6 @@ class Graphic:
 
         return crop_img
 
-    # def convert_to_jpeg(self):
-    #     """Переводит выбранный файл в формат .jpeg и удаляет исходный
-    #     """
-    #     try:
-    #         img = cv.imread(f'images/{self.__image_full_name}')
-    #         if img is None:
-    #             raise GraphicException('Такого файла нет. Проверьте правильность введения имени файла. convert_to_jpeg')
-    #     except GraphicException as g:
-    #         print(g)
-    #     else:
-    #         try:
-    #             img_name = re.split(r'\.', self.__image_full_name)[0]
-    #         except IndexError:
-    #             print('Файл предоставлен без расширения')
-    #         else:
-    #             cv.imwrite(f'images/{img_name}.jpeg', img)
-    #             os.remove(f'images/{self.__image_full_name}')
-
     @staticmethod
     def __get_digitization_image(img):
         """Обрабатывает изображение, заменяя все светлые цвета на белый.
@@ -918,6 +900,7 @@ class Graphic:
         except IndexError:
             print('Недостаточно точек R для определения результата. Функция is_r_distance_equal.')
             self.__length_of_rs_in_mm = 0
+            self.__is_equal = False
         else:
             interval = average_distance
             # В этом цикле за 1 проход вычисляются интервалы и определяется, равные ли расстояния между ними
@@ -988,7 +971,7 @@ class Graphic:
         """Формирует всю известную по анализу информацию в одно строковое поле.
 
         :return: None"""
-        self.prediction = 'Среднее значение интервалов:\n'
+        self.prediction = 'Средние значения интервалов:\n'
         for i in self.dict_of_intervals:
             average_interval = 0
             for j in range(len(self.dict_of_intervals[i])):
@@ -1005,15 +988,17 @@ class Graphic:
             else:
                 self.prediction += f'{i} - {round(average_interval, 2)} сек.\n'
         self.prediction += f"ЧСС:\n{self.heart_rate} уд/мин.\nПервичное заключение:\n"
-        if self.__is_equal:
-            self.prediction += 'Сердце бьётся ритмично. '
+        if self.__length_of_rs_in_mm == 0:
+            self.prediction += 'Недостаточно данных для заключения.'
         else:
-            self.prediction += 'Сердце бьётся не ритмично. '
-        if self.heart_rate > 90:
-            self.prediction += 'Наблюдается синусовая тахикардия.'
-        elif self.heart_rate < 50:
-            self.prediction += 'Наблюдается синусовая брадикардия.'
-        self.prediction += '\n' + '⠀' * 45
+            if self.__is_equal:
+                self.prediction += 'Сердце бьётся ритмично. '
+            else:
+                self.prediction += 'Сердце бьётся не ритмично. '
+            if self.heart_rate > 90:
+                self.prediction += 'Наблюдается синусовая тахикардия.'
+            elif self.heart_rate < 50:
+                self.prediction += 'Наблюдается синусовая брадикардия.'
         return self.prediction
 
     def get_size_one_pixel(self):

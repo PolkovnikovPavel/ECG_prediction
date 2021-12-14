@@ -46,7 +46,7 @@ btn = Button(pw(40), ph(44.5), pw(20), pw(6), 'start_scanning.png', canvas, 'sta
 main_group.add_objects(btn)
 
 main_group.add_objects(Text(pw(1), ph(90), f'Сергей - puhovskijsa@kuzstu.ru\nПавел - pavelpolkovnikov334@gmail.com',
-                            canvas, font=f'Times {ph(3)} bold', visibility=True, color='#96AABF'))
+                            canvas, font=f'Times {ph(3)} bold', visibility=True, color='#798a9c'))
 
 master.protocol("WM_DELETE_WINDOW", main_cycle.close_window)  # ▼ всё что ниже - неизменно ▼
 master.bind('<Motion>', main_cycle.mouse_move)
