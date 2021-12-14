@@ -1,6 +1,4 @@
 import asyncio, time
-import tkinter
-
 from data.functions import pw, ph
 from data.objects import *
 from tkinter.filedialog import askopenfilename
@@ -156,8 +154,8 @@ class MainCycle:
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_group.add_objects(self.obj_result)
 
-        self.text_css = Text(pw(80), ph(3), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas, anchor='ne',
-                             font=f'Times {ph(3)} italic bold', visibility=False)
+        self.text_css = Text(pw(80), ph(2), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas,
+                             font=f'Montserrat {ph(3)}', visibility=False, anchor='ne')
         self.view_group.add_objects(self.text_css)
 
         self.view_group.show_all()
@@ -212,7 +210,7 @@ class MainCycle:
         self.obj_result.change_img('button_result_2.png', pw(50), ph(50))
         self.obj_result.go_to(pw(45), ph(47))
         text = self.graphic.get_text_of_general_information()
-        self.test_result = Text(pw(50), ph(55), text, self.canvas, font=f'Times {ph(2)} italic bold')
+        self.test_result = Text(pw(48), ph(54), text, self.canvas, font=f'Montserrat {ph(1.9)}')
 
     def hide_result(self):
         self.obj_result.change_img('button_result.png', pw(10), ph(10))
