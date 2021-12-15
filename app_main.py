@@ -1,14 +1,12 @@
 import cv2 as cv
-
+import pyglet
 from data.main_cycle import *
 from data.objects import *
-from graphic import Graphic
-
 # имеет смысл только при полном экране (оно меняет временно разрешение экрана)
 # print(ScreenRes.get_modes())
 # x = ScreenRes.get_modes()
 # ScreenRes.set(1280, 720)
-# ScreenRes.set() # Set defaults
+# ScreenRes.set()  # Set defaults
 
 
 # ▼ инициализация ▼
@@ -16,8 +14,20 @@ master = tkinter.Tk()
 master.iconbitmap('app_images/Logo.ico')
 master.title('ЭКГ помощник')
 # master.attributes('-fullscreen', True)  # полный экран
-screen_w = 1280  # master.winfo_screenwidth()
-screen_h = 720  # master.winfo_screenheight()
+screen_w = master.winfo_screenwidth()  # master.winfo_screenwidth()
+screen_h = master.winfo_screenheight()  # master.winfo_screenheight()
+if screen_w > screen_h:
+    rotation = screen_w / screen_h
+    if rotation >= 1.6:
+        screen_w *= 0.7
+        screen_h *= 0.7
+    else:
+        screen_w *= 0.7
+        screen_h = screen_w/1.6
+else:
+    rotation = screen_h / screen_w
+    screen_w *= 0.8
+    screen_h = screen_w / 1.7
 initialize_w_and_h(screen_w, screen_h)
 canvas = tkinter.Canvas(master, bg='#000000', height=screen_h - 2, width=screen_w - 2)
 canvas.pack(fill=tkinter.BOTH, expand=1)
@@ -46,6 +56,7 @@ btn = Button(pw(46), ph(44.5), pw(20), pw(6), 'start_scanning.png', canvas, 'sta
 main_group.add_objects(btn)
 
 # Наш тэг
+pyglet.font.add_file("app_images/Montserrat-Regular.ttf")
 main_group.add_objects(Text(pw(1), ph(89), f'Сергей - puhovskijsa@kuzstu.ru\nПавел - pavelpolkovnikov334@gmail.com',
                             canvas, font=f'Montserrat {ph(3)} bold', visibility=True, color='#798a9c'))
 
