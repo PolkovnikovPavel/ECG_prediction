@@ -14,20 +14,23 @@ master = tkinter.Tk()
 master.iconbitmap('app_images/Logo.ico')
 master.title('ЭКГ помощник')
 # master.attributes('-fullscreen', True)  # полный экран
-screen_w = master.winfo_screenwidth()  # master.winfo_screenwidth()
-screen_h = master.winfo_screenheight()  # master.winfo_screenheight()
+screen_w = master.winfo_screenwidth()
+screen_h = master.winfo_screenheight()
 if screen_w > screen_h:
     rotation = screen_w / screen_h
-    if rotation >= 1.6:
+    if rotation >= 1.8:
+        screen_h *= 0.7
+        screen_w = screen_h * 1.6
+    elif rotation >= 1.6:
         screen_w *= 0.7
         screen_h *= 0.7
     else:
         screen_w *= 0.7
-        screen_h = screen_w/1.6
+        screen_h = screen_w / 1.6
 else:
     rotation = screen_h / screen_w
     screen_w *= 0.8
-    screen_h = screen_w / 1.7
+    screen_h = screen_w / 1.6
 initialize_w_and_h(screen_w, screen_h)
 canvas = tkinter.Canvas(master, bg='#000000', height=screen_h - 2, width=screen_w - 2)
 canvas.pack(fill=tkinter.BOTH, expand=1)
@@ -57,6 +60,7 @@ main_group.add_objects(btn)
 
 # Наш тэг
 pyglet.font.add_file("app_images/Montserrat-Regular.ttf")
+pyglet.font.add_file("app_images/Montserrat-Bold.ttf")
 main_group.add_objects(Text(pw(1), ph(89), f'Сергей - puhovskijsa@kuzstu.ru\nПавел - pavelpolkovnikov334@gmail.com',
                             canvas, font=f'Montserrat {ph(3)} bold', visibility=True, color='#798a9c'))
 

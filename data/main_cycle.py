@@ -23,6 +23,12 @@ class MainCycle:
         self.file_name = ''
         self.graphic = None
         self.speed_reading = 25
+        self.test_result = None
+        self.mode_switcher = None
+        self.obj_graphic = None
+        self.obj_result = None
+        self.text_chss = None
+        self.instruction_text = None
 
         self.__create_all_gropes()
 
@@ -78,7 +84,7 @@ class MainCycle:
                 text = self.ruler[4]
                 text.set_new_text(str(round(
                     abs(self.ruler[0] - self.mouse_x) * self.graphic.get_size_one_pixel(), 1)) + ' сек.')
-                text.go_to(self.ruler[0] + (self.mouse_x - self.ruler[0]) / 2, self.ruler[1] - ph(4))
+                text.go_to(self.ruler[0] + (self.mouse_x - self.ruler[0]) / 2, self.ruler[1] - ph(6))
                 self.ruler = [self.ruler[0], self.ruler[1], line1, line2, text]
 
     def pressing_keyboard(self, event, *args):
@@ -110,7 +116,7 @@ class MainCycle:
             line1 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.4))
             line2 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.3),
                                             dash=(pw(1.2), ph(0.4)))
-            text = Text(self.mouse_x, self.mouse_y - ph(4), '0 сек.', self.canvas, font=f'Times {ph(3)} italic bold')
+            text = Text(self.mouse_x, self.mouse_y - ph(6), '0 сек.', self.canvas, font=f'Montserrat {ph(3)}')
             self.ruler = [self.mouse_x, self.mouse_y, line1, line2, text]
 
     def right_click_out(self, event, *args):
@@ -137,13 +143,15 @@ class MainCycle:
         self.view_group.add_objects(btn)
 
         self.mode_switcher = Button(pw(25), ph(1.5), ph(14), ph(7), 'switch_mode.png', self.canvas,
-                     function=self.set_speed_50, container=[False])
+                                    function=self.set_speed_50, container=[False])
         self.view_group.add_objects(self.mode_switcher)
 
-        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png', self.start_main_menu)
+        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png',
+                     self.start_main_menu)
         self.view_group.add_objects(btn)
 
-        self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75), scan_graphic=self.scan_graphic)
+        self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75),
+                                         scan_graphic=self.scan_graphic)
         self.view_group.add_objects(self.obj_graphic)
 
         btn = Button(pw(86), ph(2.5), ph(5), ph(5), 'hide_points.png', self.canvas,
@@ -154,9 +162,9 @@ class MainCycle:
         self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_group.add_objects(self.obj_result)
 
-        self.text_css = Text(pw(80), ph(2), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas,
-                             font=f'Montserrat {ph(3)}', visibility=False, anchor='ne')
-        self.view_group.add_objects(self.text_css)
+        self.text_chss = Text(pw(80), ph(2), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas,
+                              font=f'Montserrat {ph(3)}', visibility=False, anchor='ne')
+        self.view_group.add_objects(self.text_chss)
 
         self.view_group.show_all()
         self.main_group.hide_all()
@@ -185,7 +193,7 @@ class MainCycle:
 
     def update_graph_data(self):
         self.graphic.find_intervals()
-        self.text_css.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
+        self.text_chss.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
 
     def scan_graphic(self, *args):
         for key in self.obj_graphic.dict_of_points:
@@ -200,10 +208,20 @@ class MainCycle:
         if is_open:
             obj.change_img('question_button.png', ph(6), ph(6))
             obj.go_to(pw(94), ph(2))
+            self.instruction_text.hide()
             obj.container[0] = False
         else:
-            obj.change_img('question_button_2.png', pw(100), ph(100))
-            obj.go_to(0, 0)
+            obj.change_img('question_button_2.png', pw(56), ph(61))
+            obj.go_to(pw(22), ph(20))
+            self.instruction_text = TextArea(pw(23), ph(27), 43, 11, self.canvas, font=('Montserrat', 19))
+            #  Чтение из файла
+            with open('data/Instruction.txt') as f:
+                text = ''
+                for line in f:
+                    text += line
+            self.instruction_text.insert_text(text)
+            #  Отключение возможности менять текст
+            self.instruction_text.change_window_state()
             obj.container[0] = True
 
     def show_result(self):

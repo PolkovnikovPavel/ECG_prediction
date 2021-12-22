@@ -150,7 +150,7 @@ class Button(Object):
 
 
 class Text:
-    def __init__(self, x, y, text, canvas, anchor='nw', font='Times 25 italic bold', visibility=True, color='black'):
+    def __init__(self, x, y, text, canvas, anchor='nw', font='Montserrat 25', visibility=True, color='black'):
         self.color = color
         self.x = x
         self.y = y
@@ -469,3 +469,75 @@ class ObjectGraphic:
                 point.check(x, y, is_click, is_taken_one)
 
         self.is_click = is_click
+
+
+class TextArea(Object):
+    def __init__(self, x, y, w, h, canvas, visibility=True, anchor='nw', bg_color='white', font=('Montserrat', 25),
+                 font_color='black', border_width=0, wrap_type='word'):
+        """Этот класс создаёт поле с текстом
+
+        :param x: координата x якоря
+        :param y: координата y якоря
+        :param w: ширина текстового блока в количестве символов
+        :param h: высота текстового блока в количестве символов
+        :param canvas: холст
+        :param visibility: видимость этого объекта
+        :param anchor: положение якоря, определяется в сторонах света ('nw', 'e'...)
+        :param bg_color: цвет заднего фона
+        :param font: тип размер, начертание шрифта ("тип", размер, "начертание")
+        :param font_color: цвет шрифта
+        :param border_width: ширина границы текстового окна
+        :param wrap_type: перенос строки ('char', 'none', 'word')
+        :return:
+        """
+        self.anchor = anchor
+        self.bg_color = bg_color
+        self.font = font
+        self.font_color = font_color
+        self.border_width = border_width
+        self.text_box = None
+        self.wrap_type = wrap_type
+        self.window = None
+        super().__init__(x, y, w, h, None, canvas, visibility)
+
+    def create_obj(self):
+        self.text_box = tkinter.Text(self.canvas, height=self.h, width=self.w, bd=self.border_width,
+                                     wrap=self.wrap_type)
+        self.text_box.configure(font=self.font, background=self.bg_color, foreground=self.font_color)
+        scroll = tkinter.Scrollbar(self.text_box, command=self.text_box.yview)
+        self.text_box.config(yscrollcommand=scroll.set)
+        self.window = self.canvas.create_window(self.x, self.y, anchor=self.anchor, window=self.text_box)
+
+    def insert_text(self, text):
+        """Вставляет текст из аргумента в текстовое поле
+
+        :param text: текст для вставки
+        :return:
+        """
+        self.text_box.insert(1.0, text)
+
+    def change_window_state(self, flag='False'):
+        """Изменяет состояния окна
+
+        :param flag: флаг (True/False)
+        :return:
+        """
+        if not flag is True:
+            self.text_box.configure(state='disabled')
+        else:
+            self.text_box.configure(state='normal')
+
+    # TODO: удаление объекта совместно с остальными
+    def hide(self):
+        """Скрывает объект
+
+        :return:
+        """
+        self.canvas.delete(self.window)
+
+    def show(self):
+        """Показывает объект
+
+        :return:
+        """
+        self.create_obj()
