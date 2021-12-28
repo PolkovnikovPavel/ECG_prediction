@@ -6,7 +6,13 @@ from graphic import Graphic
 
 
 class MainCycle:
-    def __init__(self, canvas, all_groups):
+    """Класс основного цикла приложения"""
+    def __init__(self, canvas, all_groups, master):
+        """Конструктор основного цикла программы
+
+        :param canvas: холст
+        :param all_groups: список объектов групп приложения (по сути - окон)
+        """
         self.canvas = canvas
         self.all_groups = all_groups
         self.__timer = time.time()
@@ -29,14 +35,23 @@ class MainCycle:
         self.obj_result = None
         self.text_chss = None
         self.instruction_text = None
+        self.master = master
 
         self.__create_all_gropes()
 
     def __create_all_gropes(self):
+        """Создаёт группы
+
+        :return:
+        """
         self.main_group = self.all_groups[0]
         self.view_group = self.all_groups[1]
 
     def start(self):
+        """Запускает основной цикл приложения
+
+        :return:
+        """
         while self.__running:
 
             self.canvas.update()
@@ -48,22 +63,47 @@ class MainCycle:
             self.__timer = time.time()
 
     def get_mouse(self):
+        """Получение состояния мыши
+
+        :return: Положение курсора по оси x, по y и данные по нажатию
+        """
         return self.mouse_x, self.mouse_y, self.is_click
 
     def close_window(self, *args):
+        """Закрывает приложение
+
+        :param args:
+        :return:
+        """
         self.__running = False
         self.main_group.hide_all()
         self.view_group.hide_all()
 
     def get_running(self):
+        """Возвращает состояние приложение (активно/неактивно)
+
+        :return: состояние приложения
+        """
         return self.__running
 
     def mouse_wheel(self, event, *args):
+        """Выводит в консоль событие о повороте колёсика мыши
+
+        :param event:
+        :param args:
+        :return:
+        """
         print(event.delta)
 
     def mouse_move(self, event, *args):
-        self.mouse_x = event.x
-        self.mouse_y = event.y
+        """Обработка события перемещения мыши
+
+        :param event:
+        :param args:
+        :return:
+        """
+        self.mouse_x = self.canvas.winfo_pointerx()-self.canvas.winfo_rootx()
+        self.mouse_y = self.canvas.winfo_pointery()-self.canvas.winfo_rooty()
         self.view_group.check(self.mouse_x, self.mouse_y, is_click=self.is_click)
         if self.type_menu == 'view_menu':
             if self.is_result:
@@ -88,9 +128,21 @@ class MainCycle:
                 self.ruler = [self.ruler[0], self.ruler[1], line1, line2, text]
 
     def pressing_keyboard(self, event, *args):
+        """Выводит в консоль нажатые на клавиатуре символы
+
+        :param event:
+        :param args:
+        :return:
+        """
         print(event.char)
 
     def click(self, event, *args):
+        """Обработка события нажатия на левую кнопку мыши
+
+        :param event:
+        :param args:
+        :return:
+        """
         self.is_click = True
         self.old_mouse_x = self.mouse_x
         self.old_mouse_y = self.mouse_y
@@ -98,13 +150,25 @@ class MainCycle:
             group.check(self.mouse_x, self.mouse_y, is_click=True)
 
     def click_out(self, event, *args):
+        """Обработка события прекращения нажатия на левую кнопку
+
+        :param event:
+        :param args:
+        :return:
+        """
         self.is_click = False
         for group in self.all_groups:
             group.check(self.mouse_x, self.mouse_y, is_click=False)
 
     def right_click(self, event, *args):
-        self.mouse_x = event.x
-        self.mouse_y = event.y
+        """Обработка события нажатия на левую кнопку мыши
+
+        :param event:
+        :param args:
+        :return:
+        """
+        self.mouse_x = self.canvas.winfo_pointerx() - self.canvas.winfo_rootx()
+        self.mouse_y = self.canvas.winfo_pointery() - self.canvas.winfo_rooty()
         self.is_right_click = True
 
         if self.ruler is not None:
@@ -120,25 +184,51 @@ class MainCycle:
             self.ruler = [self.mouse_x, self.mouse_y, line1, line2, text]
 
     def right_click_out(self, event, *args):
+        """Обработка события прекращения нажатия на правую кнопку мыши
+
+        :param event:
+        :param args:
+        :return:
+        """
         self.is_right_click = False
 
     def start_main_menu(self, *args):
+        """Показывает главное меню приложения
+
+        :param args:
+        :return:
+        """
         self.type_menu = 'main_menu'
+        self.view_group.hide_all()
         self.main_group.show_all()
 
     def start_view_menu(self, *args):
+        """Показывает основное окно приложения
+
+        :param args:
+        :return:
+        """
         self.type_menu = 'view_menu'
         self.view_group.delete()
 
         bg = Object(0, 0, pw(100), ph(100), 'background_view_menu.png', self.canvas)
         self.view_group.add_objects(bg)
 
-        btn = Button(pw(94), ph(2), ph(6), ph(6), 'question_button.png', self.canvas,
-                     function=self.show_hide_instruction, container=[False], visibility=False)
-        btn.args = btn
-        self.view_group.add_objects(btn)
+        self.instruction_background = Object(0, 0, pw(100), ph(100), 'instruction_background.png', self.canvas)
+        self.view_group.add_objects(self.instruction_background)
 
-        btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, 'restart_2.png',
+        self.question_button_1 = Button(pw(94), ph(2), ph(6), ph(6), 'question_button.png', self.canvas,
+                                        function=self.show_instruction, visibility=False)
+        self.view_group.add_objects(self.question_button_1)
+
+        self.question_button_2 = Button(pw(22), ph(20), pw(56), ph(61), 'question_button_2.png', self.canvas,
+                                        function=self.hide_instruction, visibility=False)
+        self.view_group.add_objects(self.question_button_2)
+
+        self.instruction_text = TextArea(pw(23), ph(26), 44, 12, self.canvas, visibility=False, font=('Montserrat', 18))
+        self.view_group.add_objects(self.instruction_text)
+
+        btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, img2='restart_2.png',
                      function=self.restart_graphic, container=[False], visibility=False)
         self.view_group.add_objects(btn)
 
@@ -146,8 +236,8 @@ class MainCycle:
                                     function=self.set_speed_50, container=[False])
         self.view_group.add_objects(self.mode_switcher)
 
-        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, 'back_button_2.png',
-                     self.start_main_menu)
+        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, img2='back_button_2.png',
+                     function=self.start_main_menu)
         self.view_group.add_objects(btn)
 
         self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75),
@@ -159,29 +249,49 @@ class MainCycle:
         btn.args = btn
         self.view_group.add_objects(btn)
 
-        self.obj_result = Object(pw(85), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
+        self.obj_result = Object(pw(88), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_group.add_objects(self.obj_result)
+
+        self.text_result = TextArea(pw(50), ph(54), 47, 11, self.canvas, visibility=False, font=('Montserrat', 15))
+        self.view_group.add_objects(self.text_result)
 
         self.text_chss = Text(pw(80), ph(2), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas,
                               font=f'Montserrat {ph(3)}', visibility=False, anchor='ne')
         self.view_group.add_objects(self.text_chss)
 
         self.view_group.show_all()
+        self.instruction_background.hide()
+        self.question_button_2.hide()
         self.main_group.hide_all()
 
     def set_file_name(self, *args):
+        """Открывает окно выбора файла и выводит в консоль название выбранного файла
+
+        :param args:
+        :return:
+        """
         filename = askopenfilename(filetypes=[('Фотографии ЭКГ', '*jpeg *jpg')])
         self.file_name = filename
         print(self.file_name)
 
     def start_scanning(self, *args):
+        """Создаёт объект графика, а затем запускает основное окно
+
+        :param args:
+        :return:
+        """
         if not self.file_name:
-            return
+            self.file_name = 'D:/python/ECG_prediction/images/ECG-1.jpeg'
         self.graphic = Graphic(self.file_name, self.speed_reading)
         self.graphic.graph_detection()
         self.start_view_menu()
 
     def restart_graphic(self, *args):
+        """Перезапускает анализ графика, сбрасывает до дефолтных
+
+        :param args:
+        :return:
+        """
         self.graphic.restart_graphic()
         self.obj_graphic.reset_all_points()
         if self.ruler is not None:
@@ -192,50 +302,89 @@ class MainCycle:
         self.update_graph_data()
 
     def update_graph_data(self):
+        """Обновляет информацию о графике (ЧСС и значения интервалов)
+
+        :return:
+        """
         self.graphic.find_intervals()
         self.text_chss.set_new_text(f'{round(self.graphic.heart_rate, 1)} уд/мин')
 
     def scan_graphic(self, *args):
+        """Обновляет объект графика на холсте (перерисовывает точки)
+
+        :param args:
+        :return:
+        """
         for key in self.obj_graphic.dict_of_points:
             self.graphic.dict_of_points[key] = []
             for point in self.obj_graphic.dict_of_points[key]:
                 self.graphic.dict_of_points[key].append(point.get_cor_point())
         self.update_graph_data()
 
-    def show_hide_instruction(self, *args):
-        obj = args[0]
-        is_open = obj.container[0]
-        if is_open:
-            obj.change_img('question_button.png', ph(6), ph(6))
-            obj.go_to(pw(94), ph(2))
-            self.instruction_text.hide()
-            obj.container[0] = False
-        else:
-            obj.change_img('question_button_2.png', pw(56), ph(61))
-            obj.go_to(pw(22), ph(20))
-            self.instruction_text = TextArea(pw(23), ph(27), 43, 11, self.canvas, font=('Montserrat', 19))
-            #  Чтение из файла
-            with open('data/Instruction.txt') as f:
-                text = ''
-                for line in f:
-                    text += line
-            self.instruction_text.insert_text(text)
-            #  Отключение возможности менять текст
-            self.instruction_text.change_window_state()
-            obj.container[0] = True
+    def show_instruction(self, *args):
+        """Осуществляет показ инструкции использования программы
+
+        :param args:
+        :return:
+        """
+        self.question_button_1.hide()
+        self.instruction_background.show()
+        self.question_button_2.show()
+        self.instruction_text.visibility = True
+        self.instruction_text.show()
+        #  Чтение из файла
+        with open('data/Instruction.txt') as f:
+            text = ''
+            for line in f:
+                text += line
+        self.instruction_text.insert_text(text)
+        #  Отключение возможности менять текст
+        self.instruction_text.change_window_state()
+        self.set_all_objects_disabled([self.question_button_2])
+
+    def hide_instruction(self, *args):
+        """Осуществляет скрытие инструкции использования программы
+
+        :param args:
+        :return:
+        """
+        self.question_button_1.show()
+        self.question_button_2.hide()
+        self.instruction_text.hide()
+        self.instruction_background.hide()
+        self.set_all_objects_enabled()
 
     def show_result(self):
-        self.obj_result.change_img('button_result_2.png', pw(50), ph(50))
-        self.obj_result.go_to(pw(45), ph(47))
-        text = self.graphic.get_text_of_general_information()
-        self.test_result = Text(pw(48), ph(54), text, self.canvas, font=f'Montserrat {ph(1.9)}')
+        """Отображает окно с результатами исследования
+
+        :return:
+        """
+        if self.obj_result.is_enabled:
+            self.obj_result.change_img('button_result_2.png', pw(50), ph(50))
+            self.obj_result.go_to(pw(48), ph(47))
+            self.text_result.visibility = True
+            self.text_result.show()
+            self.text_result.insert_text(self.graphic.get_text_of_general_information())
+            self.text_result.change_window_state()
+            self.set_all_objects_disabled([self.obj_result])
 
     def hide_result(self):
-        self.obj_result.change_img('button_result.png', pw(10), ph(10))
-        self.obj_result.go_to(pw(85), ph(87))
-        self.test_result.hide()
+        """Скрывает окно с результатами исследования
+
+        :return:
+        """
+        if self.obj_result.is_enabled:
+            self.obj_result.change_img('button_result.png', pw(10), ph(10))
+            self.obj_result.go_to(pw(88), ph(87))
+            self.text_result.hide()
+            self.set_all_objects_enabled()
 
     def set_speed_25(self, *args):
+        """Устанавливает скорость записи ЭКГ равную 25 мм/с
+
+        :param args:
+        :return:
+        """
         self.mode_switcher.change_img('switch_mode.png', ph(14), ph(7))
         self.mode_switcher.function = self.set_speed_50
         self.graphic.speed_of_ecg = 25
@@ -243,8 +392,33 @@ class MainCycle:
         self.update_graph_data()
 
     def set_speed_50(self, *args):
+        """Устанавливает скорость записи ЭКГ равную 50 мм/с
+
+        :param args:
+        :return:
+        """
         self.mode_switcher.change_img('switch_mode_2.png', ph(14), ph(7))
         self.mode_switcher.function = self.set_speed_25
         self.graphic.speed_of_ecg = 50
         self.speed_reading = 50
         self.update_graph_data()
+
+    def set_all_objects_disabled(self, list_of_exceptions=[]):
+        """Всем объектам холста, кроме из списка исключений, присваивается неактивное состояние, т.е. они не реагируют
+        на все взаимодействия
+
+        :param list_of_exceptions: список объектов, которые не нужно "выключать"
+        :return:
+        """
+        for group in self.all_groups:
+            if group.visibility:
+                group.set_disabled(list_of_exceptions)
+
+    def set_all_objects_enabled(self):
+        """Всем объектам холста присваивается активное состояние
+
+        :return:
+        """
+        for group in self.all_groups:
+            if group.visibility:
+                group.set_enabled()

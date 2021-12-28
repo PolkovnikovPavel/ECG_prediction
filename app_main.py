@@ -32,19 +32,20 @@ else:
     screen_w *= 0.8
     screen_h = screen_w / 1.6
 initialize_w_and_h(screen_w, screen_h)
-canvas = tkinter.Canvas(master, bg='#000000', height=screen_h - 2, width=screen_w - 2)
+canvas = tkinter.Canvas(master, bg='#000000', height=screen_h - 2, width=screen_w - 2, borderwidth=0,
+                        highlightthickness=0)
 canvas.pack(fill=tkinter.BOTH, expand=1)
 master.resizable(False, False)
 
 print(screen_w, screen_h)
 
-all_gropes = []
+all_groups = []
 
 main_group = Group()
-all_gropes.append(main_group)
+all_groups.append(main_group)
 view_grope = Group()
-all_gropes.append(view_grope)
-main_cycle = MainCycle(canvas, all_gropes)
+all_groups.append(view_grope)
+main_cycle = MainCycle(canvas, all_groups, master)
 
 bg = Object(0, 0, pw(100), ph(100), 'background.png', canvas)  # с этого места идёт создание необходимых объектов
 main_group.add_objects(bg)
