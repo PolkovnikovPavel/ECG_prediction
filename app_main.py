@@ -43,20 +43,29 @@ all_groups = []
 
 main_group = Group()
 all_groups.append(main_group)
-view_grope = Group()
-all_groups.append(view_grope)
-main_cycle = MainCycle(canvas, all_groups, master)
+view_group = Group()
+all_groups.append(view_group)
+crop_group = Group()
+all_groups.append(crop_group)
+main_cycle = MainCycle(canvas, all_groups)
 
 bg = Object(0, 0, pw(100), ph(100), 'background.png', canvas)  # с этого места идёт создание необходимых объектов
 main_group.add_objects(bg)
-exit_btn = Button(pw(95), ph(3), ph(6), ph(6), 'exit_button.png', canvas, 'exit_button_2.png', main_cycle.close_window)
+exit_btn = Button(pw(95), ph(3), ph(6), ph(6), 'exit_button.png', canvas, 'exit_button_2.png',
+                  function=main_cycle.close_window)
 main_group.add_objects(exit_btn)
 
-btn = Button(pw(34), ph(44), ph(12), ph(12), 'open_file.png', canvas, 'open_file_2.png', main_cycle.set_file_name)
+btn = Button(pw(34), ph(44), ph(12), ph(12), 'open_file.png', canvas, 'open_file_2.png',
+             function=main_cycle.set_file_name)
 main_group.add_objects(btn)
 
 btn = Button(pw(46), ph(44.5), pw(20), pw(6), 'start_scanning.png', canvas, 'start_scanning_2.png',
-             main_cycle.start_scanning)
+             function=main_cycle.start_scanning)
+main_group.add_objects(btn)
+
+btn = Button(pw(94), ph(70), ph(8), ph(8), 'cropping_icon.png', canvas, 'cropping_icon_2.png',
+             function=main_cycle.start_crop_menu)
+btn.hide()
 main_group.add_objects(btn)
 
 # Наш тэг

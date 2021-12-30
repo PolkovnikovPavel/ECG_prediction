@@ -7,7 +7,7 @@ from graphic import Graphic
 
 class MainCycle:
     """Класс основного цикла приложения"""
-    def __init__(self, canvas, all_groups, master):
+    def __init__(self, canvas, all_groups):
         """Конструктор основного цикла программы
 
         :param canvas: холст
@@ -18,6 +18,7 @@ class MainCycle:
         self.__timer = time.time()
         self.__running = True
         self.type_menu = 'main_menu'
+        self.is_enabled = True
         self.mouse_x = 0
         self.mouse_y = 0
         self.old_mouse_x = 0
@@ -29,23 +30,28 @@ class MainCycle:
         self.file_name = ''
         self.graphic = None
         self.speed_reading = 25
-        self.test_result = None
         self.mode_switcher = None
         self.obj_graphic = None
-        self.obj_result = None
-        self.text_chss = None
+        self.question_button_1 = None
+        self.question_button_2 = None
         self.instruction_text = None
-        self.master = master
+        self.instruction_background = None
+        self.obj_result = None
+        self.text_result = None
+        self.text_chss = None
 
-        self.__create_all_gropes()
+        self.ok_crop = None
 
-    def __create_all_gropes(self):
+        self.__create_all_groups()
+
+    def __create_all_groups(self):
         """Создаёт группы
 
         :return:
         """
         self.main_group = self.all_groups[0]
         self.view_group = self.all_groups[1]
+        self.crop_group = self.all_groups[2]
 
     def start(self):
         """Запускает основной цикл приложения
@@ -78,6 +84,7 @@ class MainCycle:
         self.__running = False
         self.main_group.hide_all()
         self.view_group.hide_all()
+        self.crop_group.hide_all()
 
     def get_running(self):
         """Возвращает состояние приложение (активно/неактивно)
@@ -102,10 +109,10 @@ class MainCycle:
         :param args:
         :return:
         """
-        self.mouse_x = self.canvas.winfo_pointerx()-self.canvas.winfo_rootx()
-        self.mouse_y = self.canvas.winfo_pointery()-self.canvas.winfo_rooty()
-        self.view_group.check(self.mouse_x, self.mouse_y, is_click=self.is_click)
+        self.mouse_x = self.canvas.winfo_pointerx() - self.canvas.winfo_rootx()
+        self.mouse_y = self.canvas.winfo_pointery() - self.canvas.winfo_rooty()
         if self.type_menu == 'view_menu':
+            self.view_group.check(self.mouse_x, self.mouse_y, is_click=self.is_click)
             if self.is_result:
                 if not self.obj_result.check_point(self.mouse_x, self.mouse_y):
                     self.is_result = False
@@ -114,7 +121,7 @@ class MainCycle:
                 if self.obj_result.check_point(self.mouse_x, self.mouse_y):
                     self.is_result = True
                     self.show_result()
-            if self.is_right_click and self.ruler is not None:
+            if self.is_right_click and self.ruler is not None and self.is_enabled:
                 self.canvas.delete(self.ruler[2])
                 self.canvas.delete(self.ruler[3])
                 line1 = self.canvas.create_line(self.ruler[0], self.ruler[1], self.mouse_x, self.mouse_y, width=ph(0.4))
@@ -126,6 +133,12 @@ class MainCycle:
                     abs(self.ruler[0] - self.mouse_x) * self.graphic.get_size_one_pixel(), 1)) + ' сек.')
                 text.go_to(self.ruler[0] + (self.mouse_x - self.ruler[0]) / 2, self.ruler[1] - ph(6))
                 self.ruler = [self.ruler[0], self.ruler[1], line1, line2, text]
+        if self.type_menu == 'crop_menu':
+            self.crop_group.check(self.mouse_x, self.mouse_y, is_click=self.is_click)
+            if self.ok_crop.check_point(self.mouse_x, self.mouse_y):
+                self.crop_group.set_disabled([self.ok_crop])
+            else:
+                self.crop_group.set_enabled()
 
     def pressing_keyboard(self, event, *args):
         """Выводит в консоль нажатые на клавиатуре символы
@@ -171,12 +184,11 @@ class MainCycle:
         self.mouse_y = self.canvas.winfo_pointery() - self.canvas.winfo_rooty()
         self.is_right_click = True
 
-        if self.ruler is not None:
-            self.canvas.delete(self.ruler[2])
-            self.canvas.delete(self.ruler[3])
-            self.ruler[4].hide()
-
-        if self.type_menu == 'view_menu':
+        if self.type_menu == 'view_menu' and self.is_enabled:
+            if self.ruler is not None:
+                self.canvas.delete(self.ruler[2])
+                self.canvas.delete(self.ruler[3])
+                self.ruler[4].hide()
             line1 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.4))
             line2 = self.canvas.create_line(self.mouse_x, self.mouse_y, self.mouse_x, self.mouse_y, width=ph(0.3),
                                             dash=(pw(1.2), ph(0.4)))
@@ -200,6 +212,7 @@ class MainCycle:
         """
         self.type_menu = 'main_menu'
         self.view_group.hide_all()
+        self.crop_group.hide_all()
         self.main_group.show_all()
 
     def start_view_menu(self, *args):
@@ -236,7 +249,7 @@ class MainCycle:
                                     function=self.set_speed_50, container=[False])
         self.view_group.add_objects(self.mode_switcher)
 
-        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button.png', self.canvas, img2='back_button_2.png',
+        btn = Button(pw(2), ph(1.6), ph(6), ph(6), 'back_button_view.png', self.canvas, img2='back_button_view_2.png',
                      function=self.start_main_menu)
         self.view_group.add_objects(btn)
 
@@ -256,13 +269,64 @@ class MainCycle:
         self.view_group.add_objects(self.text_result)
 
         self.text_chss = Text(pw(80), ph(2), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas,
-                              font=f'Montserrat {ph(3)}', visibility=False, anchor='ne')
+                              font=f'Montserrat {ph(3)}', anchor='ne')
         self.view_group.add_objects(self.text_chss)
 
         self.view_group.show_all()
         self.instruction_background.hide()
         self.question_button_2.hide()
         self.main_group.hide_all()
+        self.crop_group.hide_all()
+
+    def start_crop_menu(self, *args):
+        """Показывает окно кадрирования
+
+        :return:
+        """
+        self.type_menu = 'crop_menu'
+        self.crop_group.delete()
+
+        bg = Object(0, 0, pw(100), ph(100), 'background_view_menu.png', self.canvas)
+        self.crop_group.add_objects(bg)
+
+        upper_plate = CroppingPlate(0, ph(10), pw(100), ph(100), 'crop_up.png', self.canvas)
+        lower_plate = CroppingPlate(0, ph(90), pw(100), ph(100), 'crop_down.png', self.canvas, type_of_plate='lower')
+        left_plate = CroppingPlate(pw(10), 0, pw(100), ph(100), 'crop_left.png', self.canvas, type_of_plate='left')
+        right_plate = CroppingPlate(pw(90), 0, pw(100), ph(100), 'crop_right.png', self.canvas, type_of_plate='right')
+
+        self.crop = CropClass(self.canvas, self.file_name, [left_plate, upper_plate, right_plate, lower_plate], x=0,
+                              y=ph(10), w=pw(100), h=ph(75))
+        self.crop_group.add_objects(self.crop)
+
+        btn = Button(pw(2), ph(2), ph(8), ph(8), 'back_button_crop.png', self.canvas, img2='back_button_crop_2.png',
+                     function=self.start_main_menu, visibility=False)
+        self.crop_group.add_objects(btn)
+
+        self.ok_crop = Button(pw(92), ph(87), ph(8), ph(8), 'ok_crop.png', self.canvas, img2='ok_crop_2.png',
+                              function=self.crop_img, visibility=False)
+        self.crop_group.add_objects(self.ok_crop)
+
+        btn = Button(pw(93), ph(2), ph(8), ph(8), 'restart_crop.png', self.canvas, img2='restart_crop_2.png',
+                     function=self.set_plates_default, container=[False], visibility=False)
+        self.crop_group.add_objects(btn)
+
+        self.main_group.hide_all()
+        self.view_group.hide_all()
+        self.crop_group.show_all()
+
+    def crop_img(self, *args):
+        """Вызывает функцию по кадрированию изображения
+
+        :return:
+        """
+        self.crop.crop()
+
+    def set_plates_default(self, *args):
+        """Возвращает панели кадрирования на исходное положение
+
+        :return:
+        """
+        self.crop.set_plates_default()
 
     def set_file_name(self, *args):
         """Открывает окно выбора файла и выводит в консоль название выбранного файла
@@ -273,6 +337,10 @@ class MainCycle:
         filename = askopenfilename(filetypes=[('Фотографии ЭКГ', '*jpeg *jpg')])
         self.file_name = filename
         print(self.file_name)
+        if self.file_name != '':
+            self.all_groups[0].all_objects[-2].show()
+        else:
+            self.all_groups[0].all_objects[-2].hide()
 
     def start_scanning(self, *args):
         """Создаёт объект графика, а затем запускает основное окно
@@ -281,6 +349,7 @@ class MainCycle:
         :return:
         """
         if not self.file_name:
+            # return Раскомментировать, когда уже не нужно отлаживать
             self.file_name = 'D:/python/ECG_prediction/images/ECG-1.jpeg'
         self.graphic = Graphic(self.file_name, self.speed_reading)
         self.graphic.graph_detection()
@@ -294,7 +363,7 @@ class MainCycle:
         """
         self.graphic.restart_graphic()
         self.obj_graphic.reset_all_points()
-        if self.ruler is not None:
+        if self.ruler is not None and self.is_enabled:
             self.canvas.delete(self.ruler[2])
             self.canvas.delete(self.ruler[3])
             self.ruler[4].hide()
@@ -413,6 +482,7 @@ class MainCycle:
         for group in self.all_groups:
             if group.visibility:
                 group.set_disabled(list_of_exceptions)
+        self.is_enabled = False
 
     def set_all_objects_enabled(self):
         """Всем объектам холста присваивается активное состояние
@@ -422,3 +492,4 @@ class MainCycle:
         for group in self.all_groups:
             if group.visibility:
                 group.set_enabled()
+        self.is_enabled = True

@@ -1,10 +1,12 @@
-import tkinter, random
+import tkinter
+from tkinter import messagebox as mb
 from app_images.images import *
 
 
 class Object:
     """Базовый класс графического объекта"""
-    def __init__(self, x, y, w, h, img, canvas, visibility=True, container=[], mode_coord=False, is_enabled=True):
+    def __init__(self, x, y, w, h, img, canvas, visibility=True, container=[], mode_coord=False, is_enabled=True,
+                 anchor='nw'):
         """Конструктор базового класса графического объекта
 
         :param x: координата x расположения объекта на холсте
@@ -34,6 +36,7 @@ class Object:
             self.img_pil = None
         self.img_pil_start = self.img_pil
         self.canvas = canvas
+        self.anchor = anchor
         self.visibility = visibility
         self.is_enabled = is_enabled
         if visibility:
@@ -48,7 +51,8 @@ class Object:
             if self.mode_coord:
                 self.obj = self.canvas.create_image((self.x, self.y), image=self.img)
             else:
-                self.obj = self.canvas.create_image((self.x + 0.5 * self.w, self.y + 0.5 * self.h), image=self.img)
+                self.obj = self.canvas.create_image((self.x, self.y), image=self.img,
+                                                    anchor=self.anchor)
         else:
             self.obj = self.img
 
@@ -103,11 +107,11 @@ class Object:
         self.visibility = False
 
     def show(self):
-        """Показывает объект
+        """Показывает объект, при условии, что он уже не показан
 
         :return:
         """
-        if not self.visibility:
+        if self.visibility is False:
             self.create_obj()
             self.visibility = True
 
@@ -228,7 +232,7 @@ class Button(Object):
         :param is_click: было ли совершено нажатие
         :return:
         """
-        if not self.visibility:
+        if self.visibility is False:
             return
         if self.check_point(x, y):
             if is_click:
@@ -298,12 +302,13 @@ class Text:
         self.visibility = False
 
     def show(self):
-        """Показывает текст
+        """Показывает текст, при условии, что он уже не показан
 
         :return:
         """
-        self.create_obj()
-        self.visibility = True
+        if self.visibility is False:
+            self.create_obj()
+            self.visibility = True
 
     def reshow(self):
         """Скрывает и заново показывает текст
@@ -405,7 +410,8 @@ class Group:
         if not self.visibility:
             return
         for object in self.all_objects:
-            if isinstance(object, Button) or isinstance(object, ObjectGraphic):
+            if isinstance(object, Button) or isinstance(object, ObjectGraphic) or isinstance(object, CropClass) or \
+                    isinstance(object, CroppingPlate):
                 object.check(x, y, is_click)
 
     def set_disabled(self, list_of_exceptions=[]):
@@ -417,7 +423,8 @@ class Group:
         if not self.visibility:
             return
         for object in self.all_objects:
-            if isinstance(object, Button) or isinstance(object, ObjectGraphic) or isinstance(object, Object):
+            if isinstance(object, Button) or isinstance(object, ObjectGraphic) or isinstance(object, Object) or \
+                    isinstance(object, CroppingPlate) or isinstance(object, CropClass):
                 if len(list_of_exceptions) >= 1:
                     for i in list_of_exceptions:
                         if object != i:
@@ -435,7 +442,8 @@ class Group:
         if not self.visibility:
             return
         for object in self.all_objects:
-            if isinstance(object, Button) or isinstance(object, ObjectGraphic) or isinstance(object, Object):
+            if isinstance(object, Button) or isinstance(object, ObjectGraphic) or isinstance(object, Object) or \
+                    isinstance(object, CroppingPlate) or isinstance(object, CropClass):
                 object.set_enabled()
 
 
@@ -474,8 +482,6 @@ class Point(Object):
         self.old_x = x
         self.old_y = y
         self.is_hurt_trash = False
-        self.start_x = 0
-        self.start_y = 0
         self.id = None
 
     def check(self, x, y, is_click=True, is_taken_one=False):
@@ -487,7 +493,7 @@ class Point(Object):
         :param is_taken_one: выбрана ли точка
         :return:
         """
-        if not self.visibility:
+        if self.visibility is False:
             return
 
         if self.is_enabled:
@@ -690,7 +696,6 @@ class ObjectGraphic:
                         x, y = (point[0]) * (self.w / self.img_w), point[1] * (self.h / self.img_h)
                         x, y = x + self.x, y + self.y
                         obj.go_to(x, y)
-                        # obj.start_x, obj.start_y = point[0], point[1]
                         obj.point[0], obj.point[1] = point[0], point[1]
                     elif obj.id is not None:
                         # Если соответствия нет, видимо пользователь удалил одну из точек. Необходимо добавить новую
@@ -704,7 +709,7 @@ class ObjectGraphic:
                         self.dict_of_points[key][i].id = i
 
     def show(self):
-        """Показывает объект
+        """Показывает график
 
         :return:
         """
@@ -800,7 +805,7 @@ class TextArea(Object):
         :param w: ширина текстового блока в количестве символов
         :param h: высота текстового блока в количестве символов
         :param canvas: холст
-        :param visibility: логический параметр видимости объекта (True/False)
+        :param visibility: разрешение на отображение этого объекта
         :param anchor: положение якоря, определяется в сторонах света ('nw', 'e'...)
         :param bg_color: цвет заднего фона
         :param font: тип размер, начертание шрифта ("тип", размер, "начертание")
@@ -832,7 +837,7 @@ class TextArea(Object):
                                      background=self.bg_color, foreground=self.font_color)
         scrollbar.configure(command=self.text_box.yview)
         scrollbar.pack(side='right', fill='y')
-        self.text_box.pack(anchor=self.anchor)
+        self.text_box.pack()
 
         self.window = self.canvas.create_window(self.x, self.y, anchor=self.anchor, window=frame)
 
@@ -879,3 +884,249 @@ class TextArea(Object):
         if self.visibility:
             self.create_obj()
             self.visibility = True
+
+
+class CroppingPlate(Object):
+    """Класс панели для кадрирования изображений"""
+    def __init__(self, x, y, w, h, img, canvas, type_of_plate='upper'):
+        """Конструктор класса панели кадрирования
+
+        :param x: координата x этой панели (учитывайте якорь!)
+        :param y: координата y этой панели (учитывайте якорь!)
+        :param w: ширина этой панели (стандартно - 100%)
+        :param h: ширина этой панели (стандартно - 100%)
+        :param img: изображение панели
+        :param canvas: холст
+        :param type_of_plate: тип панели (upper, lower, left, right)
+        """
+        anchor = ''
+        self.type_of_plate = type_of_plate
+        if self.type_of_plate == 'upper' or self.type_of_plate == 'lower':
+            self.locked_coord = 'x'
+            if self.type_of_plate == 'upper':
+                anchor = 'sw'
+            else:
+                anchor = 'nw'
+        elif self.type_of_plate == 'left' or self.type_of_plate == 'right':
+            self.locked_coord = 'y'
+            if self.type_of_plate == 'left':
+                anchor = 'ne'
+            else:
+                anchor = 'nw'
+        super().__init__(x, y, w, h, img, canvas, visibility=False, container=[], mode_coord=False, is_enabled=True,
+                         anchor=anchor)
+        self.is_moving = False
+        self.default_x = x
+        self.default_y = y
+
+    def check_plate(self, x, y):
+        """Проверяет, находится ли данная точка в области этой панели
+
+        :param x: координата x данной точки
+        :param y: координата y данной точки
+        :return: True/False
+        """
+        if self.type_of_plate is 'upper':
+            if (self.x <= x <= self.x + self.w) and (self.y - self.h <= y <= self.y):
+                return True
+            else:
+                return False
+        if self.type_of_plate is 'lower':
+            if (self.x <= x <= self.x + self.w) and (self.y <= y <= self.y + self.h):
+                return True
+            else:
+                return False
+        if self.type_of_plate is 'left':
+            if (self.x - self.w <= x <= self.x) and (self.y <= y <= self.y + self.h):
+                return True
+            else:
+                return False
+        if self.type_of_plate is 'right':
+            if (self.x <= x <= self.x + self.w) and (self.y <= y <= self.y + self.h):
+                return True
+            else:
+                return False
+
+    def check(self, x, y, is_click=True):
+        """Проверяет, было ли совершено перемещение панели и изменяет её положение
+
+        :param x: новая координата x
+        :param y:новая координата y
+        :param is_click: было ли совершено нажатие
+        :return:
+        """
+        if self.visibility is False:
+            return
+
+        is_checked = self.check_plate(x, y)
+        if self.is_enabled:
+            if self.is_moving:
+                if is_click and is_checked:
+                    if self.type_of_plate == 'upper':
+                        self.go_to(x, y + ph(2))
+                    elif self.type_of_plate == 'lower':
+                        self.go_to(x, y - ph(2))
+                    elif self.type_of_plate == 'left':
+                        self.go_to(x + pw(1), y)
+                    elif self.type_of_plate == 'right':
+                        self.go_to(x - pw(1), y)
+                else:
+                    self.is_moving = False
+                    if self.type_of_plate == 'upper':
+                        self.go_to(x, y + ph(2))
+                    elif self.type_of_plate == 'lower':
+                        self.go_to(x, y - ph(2))
+                    elif self.type_of_plate == 'left':
+                        self.go_to(x + pw(1), y)
+                    elif self.type_of_plate == 'right':
+                        self.go_to(x - pw(1), y)
+            else:
+                if is_click and is_checked:
+                    self.is_moving = True
+
+    def go_to(self, x, y):
+        """Изменяет положение панели, учитывая её вид
+
+        :param x: новая координата x
+        :param y: новая координата y
+        :return:
+        """
+        dx, dy = 0, 0
+        if self.locked_coord == 'x':
+            dx = 0
+            if y < ph(5) or y > ph(95):
+                dy = 0
+            else:
+                dy = y - self.y
+        elif self.locked_coord == 'y':
+            if x < pw(1) or x > pw(99):
+                dx = 0
+            else:
+                dx = x - self.x
+            dy = 0
+        self.canvas.move(self.obj, dx, dy)
+        self.x += dx
+        self.y += dy
+
+    def get_cords(self):
+        """Возвращает координаты пластины
+
+        :return:
+        """
+        return [self.x, self.y]
+
+
+class CropClass:
+    """Класс изображения кадрирования"""
+    def __init__(self, canvas, path_to_file, list_of_plates, x=0, y=ph(10), w=pw(100), h=ph(75)):
+        """Конструктор класса изображения кадрирования
+
+        :param canvas: холст
+        :param path_to_file: путь к файлу
+        :param list_of_plates: список пластин кадрирования
+        :param x: координата x изображения
+        :param y: координата y изображения
+        :param w: длина изображения
+        :param h: ширина изображения
+        """
+        self.object = None
+        self.canvas = canvas
+        self.path_to_file = path_to_file
+        self.group_of_plates = Group()
+        for plate in list_of_plates:
+            self.group_of_plates.add_objects(plate)
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.crop_left = 0
+        self.crop_upper = 0
+        self.crop_right = 0
+        self.crop_lower = 0
+        self.create_obj()
+
+    def create_obj(self):
+        """Создаёт объект изображения
+
+        :return:
+        """
+        self.object = Object(self.x, self.y, self.w, self.h, self.path_to_file, self.canvas)
+
+    def crop(self):
+        """Обрезает изображение
+
+        :return:
+        """
+        dict_of_cords = {}
+        for plate in self.group_of_plates.all_objects:
+            dict_of_cords[f'{plate.type_of_plate}'] = plate.get_cords()
+
+        if dict_of_cords['left'][0] <= pw(1) or dict_of_cords['left'][0] >= pw(99):
+            self.crop_left = 0
+        else:
+            self.crop_left = dict_of_cords['left'][0]
+        if dict_of_cords['upper'][1] <= self.y or dict_of_cords['upper'][1] >= self.y + self.h:
+            self.crop_upper = 0
+        else:
+            self.crop_upper = dict_of_cords['upper'][1] - self.y
+        if dict_of_cords['right'][0] >= pw(99) or dict_of_cords['right'][0] <= pw(1):
+            self.crop_right = self.x + self.w
+        else:
+            self.crop_right = dict_of_cords['right'][0]
+        if dict_of_cords['lower'][1] >= self.y + self.h or dict_of_cords['lower'][1] <= self.y:
+            self.crop_lower = self.h
+        else:
+            self.crop_lower = self.h-(self.y + self.h - dict_of_cords['lower'][1])
+        cropped_img = self.object.img_pil.crop([self.crop_left, self.crop_upper, self.crop_right, self.crop_lower])
+        cropped_img.save(self.path_to_file)
+        mb.showinfo('Информация', 'Файл успешно сохранён!')
+
+    def show(self):
+        """Показывает объект
+
+        :return:
+        """
+        self.object.show()
+        self.group_of_plates.show_all()
+
+    def hide(self):
+        """Показывает объект
+
+        :return:
+        """
+        self.object.hide()
+        self.group_of_plates.hide_all()
+
+    def check(self, x, y, is_click):
+        """Проверяет, было ли совершено взаимодействие с пластинами
+
+        :param x:
+        :param y:
+        :param is_click:
+        :return:
+        """
+        self.group_of_plates.check(x, y, is_click)
+
+    def set_disabled(self):
+        """Устанавливает всем пластинам неактивное состояние
+
+        :return:
+        """
+        for plate in self.group_of_plates.all_objects:
+            plate.set_disabled()
+
+    def set_enabled(self):
+        """Устанавливает всем пластинам активное состояние
+
+        :return:
+        """
+        for plate in self.group_of_plates.all_objects:
+            plate.set_enabled()
+
+    def set_plates_default(self):
+        """Возвращает пластинам положение по умолчанию
+
+        :return:
+        """
+        for plate in self.group_of_plates.all_objects:
+            plate.go_to(plate.default_x, plate.default_y)
