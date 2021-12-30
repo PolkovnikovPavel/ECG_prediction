@@ -602,9 +602,12 @@ class Graphic:
                     list_of_points_s.append(point)
                 else:
                     list_of_points_q.append(point)
-            points_s.append(max(list_of_points_s, key=lambda x: x[1]))  # берёт самую низкую точку из указанного
-            # диапазона
-            points_q.append(max(list_of_points_q, key=lambda x: x[1]))
+                try:  # TODO: обработка таких случаев
+                    points_s.append(max(list_of_points_s, key=lambda x: x[1]))  # берёт самую низкую точку из указанного
+                    # диапазона
+                    points_q.append(max(list_of_points_q, key=lambda x: x[1]))
+                except ValueError:
+                    pass
 
         return points_q, points_s
 
@@ -632,8 +635,11 @@ class Graphic:
                 # это самое главное - выбирает все точки, принадлежащие диапозону
 
                 points.sort(key=lambda x: x[1])
-                average_dist += points[0][0] - points_r[i][0]  # то на сколько точка Т удалена от R
-                points_t.append(points[0][:2])
+                try:  # TODO: обработка таких случаев
+                    average_dist += points[0][0] - points_r[i][0]  # то на сколько точка Т удалена от R
+                    points_t.append(points[0][:2])
+                except IndexError:
+                    pass
             else:  # работет при обработке диапозона после последней точки R.
                 # Тут-то и нужны average_dist и average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
@@ -670,8 +676,11 @@ class Graphic:
                 # это самое главное - выбирает все точки, принадлежащие диапозону
 
                 points.sort(key=lambda x: x[1])
-                average_dist += points_r[i][0] - points[0][0]  # то на сколько точка Р удалена от R
-                points_p.append(points[0][:2])
+                try:  # TODO: обработка таких случаев
+                    average_dist += points_r[i][0] - points[0][0]  # то на сколько точка Р удалена от R
+                    points_p.append(points[0][:2])
+                except IndexError:
+                    pass
             else:  # работет при обработке диапозона перед первой точкой R. Тут-то и нужны average_dist и
                 # average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
