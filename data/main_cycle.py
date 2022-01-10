@@ -39,6 +39,7 @@ class MainCycle:
         self.obj_result = None
         self.text_result = None
         self.text_chss = None
+        self.time_coef = 0
 
         self.ok_crop = None
 
@@ -130,7 +131,8 @@ class MainCycle:
                                                 dash=(ph(0.7), ph(0.3)))
                 text = self.ruler[4]
                 text.set_new_text(str(round(
-                    abs(self.ruler[0] - self.mouse_x) * self.graphic.get_size_one_pixel(), 1)) + ' сек.')
+                    abs(self.ruler[0] - self.mouse_x) * self.graphic.get_size_one_pixel() * self.time_coef, 2)) +
+                                  ' сек.')
                 text.go_to(self.ruler[0] + (self.mouse_x - self.ruler[0]) / 2, self.ruler[1] - ph(6))
                 self.ruler = [self.ruler[0], self.ruler[1], line1, line2, text]
         if self.type_menu == 'crop_menu':
@@ -255,6 +257,8 @@ class MainCycle:
 
         self.obj_graphic = ObjectGraphic(self.canvas, self.graphic, self.file_name, 0, ph(10), pw(100), ph(75),
                                          scan_graphic=self.scan_graphic)
+        # ---
+        self.time_coef = self.obj_graphic.img_w / self.obj_graphic.w
         self.view_group.add_objects(self.obj_graphic)
 
         btn = Button(pw(86), ph(2.5), ph(5), ph(5), 'hide_points.png', self.canvas,

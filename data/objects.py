@@ -1061,7 +1061,7 @@ class CropClass:
         for plate in self.group_of_plates.all_objects:
             dict_of_cords[f'{plate.type_of_plate}'] = plate.get_cords()
 
-        if dict_of_cords['left'][0] <= pw(1) or dict_of_cords['left'][0] >= pw(99):
+        if dict_of_cords['left'][0] <= pw(2) or dict_of_cords['left'][0] >= pw(98):
             self.crop_left = 0
         else:
             self.crop_left = dict_of_cords['left'][0]
@@ -1069,7 +1069,7 @@ class CropClass:
             self.crop_upper = 0
         else:
             self.crop_upper = dict_of_cords['upper'][1] - self.y
-        if dict_of_cords['right'][0] >= pw(99) or dict_of_cords['right'][0] <= pw(1):
+        if dict_of_cords['right'][0] >= pw(98) or dict_of_cords['right'][0] <= pw(2):
             self.crop_right = self.x + self.w
         else:
             self.crop_right = dict_of_cords['right'][0]
@@ -1077,9 +1077,12 @@ class CropClass:
             self.crop_lower = self.h
         else:
             self.crop_lower = self.h-(self.y + self.h - dict_of_cords['lower'][1])
-        cropped_img = self.object.img_pil.crop([self.crop_left, self.crop_upper, self.crop_right, self.crop_lower])
-        cropped_img.save(self.path_to_file)
-        mb.showinfo('Информация', 'Файл успешно сохранён!')
+        if self.crop_upper == 0 and self.crop_lower == self.h and self.crop_left == 0 and self.crop_right == self.x + self.w:
+            mb.showinfo('Информация', 'Файл успешно сохранён!')
+        else:
+            cropped_img = self.object.img_pil.crop([self.crop_left, self.crop_upper, self.crop_right, self.crop_lower])
+            cropped_img.save(self.path_to_file)
+            mb.showinfo('Информация', 'Файл успешно сохранён!')
 
     def show(self):
         """Показывает объект

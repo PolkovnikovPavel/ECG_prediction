@@ -926,7 +926,7 @@ class Graphic:
                 self.__is_equal = True
 
             # Считаем среднее расстояние между вершинами R
-            average_distance /= len(self.dict_of_points['R']) - 1
+            average_distance /= len(self.dict_of_points['R'])
 
             qua_of_squares = average_distance / self.__length_of_square  # Делим среднее
             # расстояние между вершинами на средную длину клеточки, чтобы вычислить, сколько клеточек между R-ками
@@ -987,7 +987,7 @@ class Graphic:
                 average_interval += self.dict_of_intervals[i][j]
 
             if len(self.dict_of_intervals[i]) > 2:
-                average_interval = average_interval / (len(self.dict_of_intervals[i]) - 1)
+                average_interval = average_interval / (len(self.dict_of_intervals[i]))
             elif len(self.dict_of_intervals[i]) == 2:
                 average_interval = average_interval / 2
             else:
