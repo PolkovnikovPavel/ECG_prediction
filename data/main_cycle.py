@@ -240,7 +240,7 @@ class MainCycle:
                                         function=self.hide_instruction, visibility=False)
         self.view_group.add_objects(self.question_button_2)
 
-        self.instruction_text = TextArea(pw(23), ph(26), 44, 12, self.canvas, visibility=False, font=('Montserrat', 18))
+        self.instruction_text = TextArea(pw(23), ph(26), round(39 + 0.006*pw(56)), 12, self.canvas, visibility=False, font=('Montserrat', 18))
         self.view_group.add_objects(self.instruction_text)
 
         btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, img2='restart_2.png',
