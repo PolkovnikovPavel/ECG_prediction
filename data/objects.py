@@ -1,6 +1,7 @@
 import tkinter
 from tkinter import messagebox as mb
 from app_images.images import *
+import re
 
 
 class Object:
@@ -1077,11 +1078,15 @@ class CropClass:
             self.crop_lower = self.h
         else:
             self.crop_lower = self.h-(self.y + self.h - dict_of_cords['lower'][1])
-        if self.crop_upper == 0 and self.crop_lower == self.h and self.crop_left == 0 and self.crop_right == self.x + self.w:
+        if self.crop_upper == 0 and self.crop_lower == self.h and self.crop_left == 0 \
+                and self.crop_right == self.x + self.w:
             mb.showinfo('Информация', 'Файл успешно сохранён!')
         else:
             cropped_img = self.object.img_pil.crop([self.crop_left, self.crop_upper, self.crop_right, self.crop_lower])
-            cropped_img.save(self.path_to_file)
+            img_new_name = re.split('.j', self.path_to_file)[0]
+            img_new_name += '_обрезанный'
+            img_new_name += '.j'+re.split('.j', self.path_to_file)[1]
+            cropped_img.save(img_new_name)
             mb.showinfo('Информация', 'Файл успешно сохранён!')
 
     def show(self):

@@ -7,7 +7,7 @@ from graphic import Graphic
 
 class MainCycle:
     """Класс основного цикла приложения"""
-    def __init__(self, canvas, all_groups):
+    def __init__(self, canvas, all_groups, screen_w, screen_h):
         """Конструктор основного цикла программы
 
         :param canvas: холст
@@ -41,7 +41,39 @@ class MainCycle:
         self.text_chss = None
         self.time_coef = 0
 
+        self.obj_crop = None
+        self.back_crop = None
         self.ok_crop = None
+        self.restart_crop = None
+
+        self.dict_of_instruction_sizes = {
+            '1920x1080': [44, 12, 18],
+            '1680x1050': [41, 12, 17],
+            '1600x900': [45, 12, 15],
+            '1440x900': [40, 12, 15],
+            '1280x1024': [42, 12, 13],
+            '1280x960': [42, 12, 13],
+            '1280x720': [42, 11, 13],
+            '1024x768': [37, 11, 11],
+            '832x624': [37, 12, 9],
+            '800x600': [41, 12, 8]
+        }
+
+        self.dict_of_results_sizes = {
+            '1920x1080': [47, 11, 15],
+            '1680x1050': [41, 11, 14],
+            '1600x900': [46, 11, 12],
+            '1440x900': [41, 11, 12],
+            '1280x1024': [39, 11, 11],
+            '1280x960': [39, 11, 11],
+            '1280x720': [45, 11, 10],
+            '1024x768': [40, 11, 9],
+            '832x624': [35, 10, 8],
+            '800x600': [40, 12, 7]
+        }
+
+        self.screen_w = screen_w
+        self.screen_h = screen_h
 
         self.__create_all_groups()
 
@@ -139,6 +171,10 @@ class MainCycle:
             self.crop_group.check(self.mouse_x, self.mouse_y, is_click=self.is_click)
             if self.ok_crop.check_point(self.mouse_x, self.mouse_y):
                 self.crop_group.set_disabled([self.ok_crop])
+            elif self.back_crop.check_point(self.mouse_x, self.mouse_y):
+                self.crop_group.set_disabled([self.back_crop])
+            elif self.restart_crop.check_point(self.mouse_x, self.mouse_y):
+                self.crop_group.set_disabled([self.restart_crop])
             else:
                 self.crop_group.set_enabled()
 
@@ -223,6 +259,8 @@ class MainCycle:
         :param args:
         :return:
         """
+        self.main_group.all_objects[2].change_img('open_file_3.png', ph(12), ph(12))
+
         self.type_menu = 'view_menu'
         self.view_group.delete()
 
@@ -240,7 +278,24 @@ class MainCycle:
                                         function=self.hide_instruction, visibility=False)
         self.view_group.add_objects(self.question_button_2)
 
-        self.instruction_text = TextArea(pw(23), ph(26), round(39 + 0.006*pw(56)), 12, self.canvas, visibility=False, font=('Montserrat', 18))
+        complex_res = f'{str(self.screen_w)}x{str(self.screen_h)}'
+        instruction_width = 0
+        instruction_high = 0
+        instruction_font = 0
+        for key in self.dict_of_instruction_sizes:
+            if key == complex_res:
+                instruction_width, instruction_high, instruction_font = self.dict_of_instruction_sizes[key][0], \
+                                                                        self.dict_of_instruction_sizes[key][1], \
+                                                                        self.dict_of_instruction_sizes[key][2]
+        if instruction_high == 0 or instruction_width == 0 or instruction_font == 0:
+            #  При нестандартных разрешениях подбирает примерный размер
+            self.instruction_text = TextArea(pw(23), ph(26), round(35 + 0.012*pw(56)), round(10.969 + 0.002*ph(61)),
+                                             self.canvas, visibility=False,
+                                             font=('Montserrat', round(0.197 + 0.0388*ph(61))))
+        else:
+            self.instruction_text = TextArea(pw(23), ph(26), instruction_width, instruction_high,
+                                             self.canvas, visibility=False,
+                                             font=('Montserrat', instruction_font))
         self.view_group.add_objects(self.instruction_text)
 
         btn = Button(pw(82), ph(2.5), ph(5), ph(5), 'restart.png', self.canvas, img2='restart_2.png',
@@ -269,7 +324,22 @@ class MainCycle:
         self.obj_result = Object(pw(88), ph(87), pw(10), ph(10), 'button_result.png', self.canvas)
         self.view_group.add_objects(self.obj_result)
 
-        self.text_result = TextArea(pw(50), ph(54), 47, 11, self.canvas, visibility=False, font=('Montserrat', 15))
+        results_width = 0
+        results_high = 0
+        results_font = 0
+        for key in self.dict_of_results_sizes:
+            if key == complex_res:
+                results_width, results_high, results_font = self.dict_of_results_sizes[key][0], \
+                                                                        self.dict_of_results_sizes[key][1], \
+                                                                        self.dict_of_results_sizes[key][2]
+        if results_high == 0 or results_width == 0 or results_font == 0:
+            #  При нестандартных разрешениях подбирает примерный размер
+            self.text_result = TextArea(pw(50), ph(54), round(23 + 0.83 * (pw(56)**0.5)),
+                                        round(11.046 - 0.0002 * ph(61)), self.canvas, visibility=False,
+                                        font=('Montserrat', round(1.03395 + 0.0292 * ph(61))))
+        else:
+            self.text_result = TextArea(pw(50), ph(54), results_width, results_high, self.canvas, visibility=False,
+                                        font=('Montserrat', results_font))
         self.view_group.add_objects(self.text_result)
 
         self.text_chss = Text(pw(80), ph(2), f'{round(self.graphic.heart_rate, 1)} уд/мин', self.canvas,
@@ -298,21 +368,22 @@ class MainCycle:
         left_plate = CroppingPlate(pw(10), 0, pw(100), ph(100), 'crop_left.png', self.canvas, type_of_plate='left')
         right_plate = CroppingPlate(pw(90), 0, pw(100), ph(100), 'crop_right.png', self.canvas, type_of_plate='right')
 
-        self.crop = CropClass(self.canvas, self.file_name, [left_plate, upper_plate, right_plate, lower_plate], x=0,
-                              y=ph(10), w=pw(100), h=ph(75))
-        self.crop_group.add_objects(self.crop)
+        self.obj_crop = CropClass(self.canvas, self.file_name, [left_plate, upper_plate, right_plate, lower_plate], x=0,
+                                  y=ph(10), w=pw(100), h=ph(75))
+        self.crop_group.add_objects(self.obj_crop)
 
-        btn = Button(pw(2), ph(2), ph(8), ph(8), 'back_button_crop.png', self.canvas, img2='back_button_crop_2.png',
-                     function=self.start_main_menu, visibility=False)
-        self.crop_group.add_objects(btn)
+        self.back_crop = Button(pw(2), ph(2), ph(8), ph(8), 'back_button_crop.png', self.canvas,
+                                img2='back_button_crop_2.png', function=self.start_main_menu, visibility=False)
+        self.crop_group.add_objects(self.back_crop)
 
         self.ok_crop = Button(pw(92), ph(87), ph(8), ph(8), 'ok_crop.png', self.canvas, img2='ok_crop_2.png',
                               function=self.crop_img, visibility=False)
         self.crop_group.add_objects(self.ok_crop)
 
-        btn = Button(pw(93), ph(2), ph(8), ph(8), 'restart_crop.png', self.canvas, img2='restart_crop_2.png',
-                     function=self.set_plates_default, container=[False], visibility=False)
-        self.crop_group.add_objects(btn)
+        self.restart_crop = Button(pw(93), ph(2), ph(8), ph(8), 'restart_crop.png', self.canvas,
+                                   img2='restart_crop_2.png', function=self.set_plates_default, container=[False],
+                                   visibility=False)
+        self.crop_group.add_objects(self.restart_crop)
 
         self.main_group.hide_all()
         self.view_group.hide_all()
@@ -323,14 +394,14 @@ class MainCycle:
 
         :return:
         """
-        self.crop.crop()
+        self.obj_crop.crop()
 
     def set_plates_default(self, *args):
         """Возвращает панели кадрирования на исходное положение
 
         :return:
         """
-        self.crop.set_plates_default()
+        self.obj_crop.set_plates_default()
 
     def set_file_name(self, *args):
         """Открывает окно выбора файла и выводит в консоль название выбранного файла
@@ -342,9 +413,11 @@ class MainCycle:
         self.file_name = filename
         print(self.file_name)
         if self.file_name != '':
-            self.all_groups[0].all_objects[-2].show()
+            self.main_group.all_objects[4].show()
+            self.main_group.all_objects[2].change_img('open_file_3.png', ph(12), ph(12))
         else:
-            self.all_groups[0].all_objects[-2].hide()
+            self.main_group.all_objects[4].hide()
+            self.main_group.all_objects[2].change_img('open_file.png', ph(12), ph(12))
 
     def start_scanning(self, *args):
         """Создаёт объект графика, а затем запускает основное окно
@@ -353,7 +426,7 @@ class MainCycle:
         :return:
         """
         if not self.file_name:
-            # return Раскомментировать, когда уже не нужно отлаживать
+            # return
             self.file_name = 'D:/python/ECG_prediction/images/ECG-1.jpeg'
         self.graphic = Graphic(self.file_name, self.speed_reading)
         self.graphic.graph_detection()
@@ -406,7 +479,7 @@ class MainCycle:
         self.instruction_text.visibility = True
         self.instruction_text.show()
         #  Чтение из файла
-        with open('data/Instruction.txt') as f:
+        with open('app_images/Instruction.txt') as f:
             text = ''
             for line in f:
                 text += line
