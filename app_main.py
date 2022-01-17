@@ -68,6 +68,14 @@ btn = Button(pw(94), ph(70), ph(8), ph(8), 'cropping_icon.png', canvas, 'croppin
 btn.hide()
 main_group.add_objects(btn)
 
+bg = Object(0, 0, pw(100), ph(100), 'load_bg.png', canvas)
+bg.hide()
+main_group.add_objects(bg)
+
+bg = Text(pw(45), ph(35), 'Загрузка...', canvas, font=f'Montserrat {ph(3)} bold', visibility=True, color='#ffffff')
+bg.hide()
+main_group.add_objects(bg)
+
 # Наш тэг
 pyglet.font.add_file("app_images/Montserrat-Regular.ttf")
 pyglet.font.add_file("app_images/Montserrat-Bold.ttf")

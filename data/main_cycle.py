@@ -252,6 +252,8 @@ class MainCycle:
         self.view_group.hide_all()
         self.crop_group.hide_all()
         self.main_group.show_all()
+        self.main_group.all_objects[5].hide()
+        self.main_group.all_objects[6].hide()
 
     def start_view_menu(self, *args):
         """Показывает основное окно приложения
@@ -426,8 +428,11 @@ class MainCycle:
         :return:
         """
         if not self.file_name:
-            # return
-            self.file_name = 'D:/python/ECG_prediction/images/ECG-1.jpeg'
+            return
+            # self.file_name = 'D:/python/ECG_prediction/images/ECG-1.jpeg'
+        self.main_group.all_objects[5].show()
+        self.main_group.all_objects[6].show()
+        self.canvas.update()
         self.graphic = Graphic(self.file_name, self.speed_reading)
         self.graphic.graph_detection()
         self.start_view_menu()
