@@ -1,7 +1,6 @@
 import cv2 as cv
 import numpy as np
 import math
-import re
 import os
 import copy
 
@@ -276,10 +275,10 @@ class Graphic:
 
         Суть работы
         ___________________________________________
-        Работа данной функции основана на том, что что сначала находится график ЭКГ, затем он
+        Работа данной функции основана на том, что сначала находится график ЭКГ, затем он
         вычитается из исходного изображения и остаются только клеточки. Клеточки опять проходят
         через обнаружение, и из этого определяется, сколько в 1 клеточке пикселей. Это нужно при переводе
-        пиксели -> сантиметры -> милисекунды -> секунды
+        пиксели -> сантиметры -> миллисекунды -> секунды
 
         :param is_show: is_show
         """
@@ -338,7 +337,7 @@ class Graphic:
                 list_of_squares_coord.append([x, y, x + w, y + h])
 
         # Считаем, сколько пикселей занимает одна клеточка на оси Х
-        list_of_squares_dis = []  # Список растояний между точками
+        list_of_squares_dis = []  # Список расстояний между точками
         flag = True
         i = 0
         # В этом цикле считаем, сколько клеточек по x занимает одна клетка, если это
@@ -412,7 +411,7 @@ class Graphic:
         last_average_y = (0, [0])  # это данные о предыдущем столбце (для вычислений)
         average_y = last_average_y[0]
         for x in range(array.shape[1]):
-            all_y = []  # тут записанны все y, которые есть в столбце
+            all_y = []  # тут записаны все y, которые есть в столбце
             for y in range(0, array.shape[0]):  # перебор всего столбца и анализ
                 if array[y, x] == 1:
                     all_y.append(y)
@@ -421,9 +420,9 @@ class Graphic:
                 average_y = last_average_y[0]
             else:
                 average_y = sum(all_y) // len(all_y)  # вычисляет средний У
-            height = last_average_y[0] - average_y  # это высота между предыдущей точкои и текущей (вертикальный катет)
+            height = last_average_y[0] - average_y  # это высота между предыдущей точкой и текущей (вертикальный катет)
             size = (height ** 2 + 1) ** 0.5  # гипотенуза треугольника
-            angle = math.asin(height / size)  # угол под, которым движется кривай в текущей точке
+            angle = math.asin(height / size)  # угол, под которым движется кривая в текущей точке
 
             if len(last_points) == 0:  # нужно для самого первого столбца (делает корректные значения в самом начале)
                 last_points.append((x, average_y, 2))
@@ -431,20 +430,20 @@ class Graphic:
                 last_average_y = (average_y, all_y)
                 continue
 
-            if is_upper:  # если кривая возврастает
-                if angle < 0:  # если у неё угол стал убывающим, тоесть точка экстремума
+            if is_upper:  # если кривая возрастает
+                if angle < 0:  # если у неё угол стал убывающим, то есть точка экстремума
                     last_points.append((x - 1, last_average_y[1][0], 1))  # добавляет точку (самую верхнюю) для
                     # результата
                     is_upper = not is_upper  # указывает, что кривая начала убывать
-                    last_angle = angle  # запаминает, под каким углом шла кривая
+                    last_angle = angle  # запоминает, под каким углом шла кривая
             else:  # если кривая убывает
-                if angle > 0:  # если у неё угол стал возврастающим, тоесть точка экстремума
+                if angle > 0:  # если у неё угол стал возрастающим, то есть точка экстремума
                     last_points.append((x - 1, last_average_y[1][-1], 1))  # добавляет точку (самую нижнюю) для
                     # результата
-                    is_upper = not is_upper  # указывает, что кривая начала возврастать
-                    last_angle = angle  # запаминает, под каким углом шла кривая
+                    is_upper = not is_upper  # указывает, что кривая начала возрастать
+                    last_angle = angle  # запоминает, под каким углом шла кривая
 
-            if abs(last_angle - angle) > math.pi / 6:  # кривая повернулсь уже более чем на 30 грпдусов, то
+            if abs(last_angle - angle) > math.pi / 6:  # кривая повернулась уже более чем на 30 градусов, то
                 # запоминает её
                 last_points.append((x, average_y, 2))
                 last_angle = angle
@@ -462,7 +461,7 @@ class Graphic:
 
         Суть работы
         ___________________________________________
-        Можно заметить, что растояние у точек R до соседних изломов больше чем у большенства.
+        Можно заметить, что расстояние у точек R до соседних изломов больше чем у большинства.
         А так же они обычно выше остальных.
         На этом основана следующая сортировка
 
@@ -473,7 +472,7 @@ class Graphic:
         if self.__all_extremes is None:
             self.graph_detection()
 
-        average_length = 0  # среднее растояние между каждой точкой излома (экстркмум)
+        average_length = 0  # среднее расстояние между каждой точкой излома (экстремум)
         average_y = 0  # для поиска средней высоты
         max_y = 10000  # для поиска самой высокой точки
         for i in range(1, len(self.__all_extremes)):  # проверяет все найденные изломы
@@ -492,20 +491,20 @@ class Graphic:
         # ______________________________________
 
         r_points = []  # будущие точки R
-        average_width = 0  # среднее растояние по оси Х между соседними перегибами
+        average_width = 0  # среднее расстояние по оси Х между соседними перегибами
         minimum_boundary = average_y - (average_y - max_y) / 3  # минимальный порог высоты, по которому надо оценивать
         # точку, если она ниже, то пропускаем
         for i in range(1, len(self.__all_extremes) - 1):
             x1, y1, id1 = self.__all_extremes[i - 1]
             x2, y2, id2 = self.__all_extremes[i]
             x3, y3, id3 = self.__all_extremes[i + 1]
-            length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  # теорема пифогора
+            length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  # теорема Пифагора
             length2 = ((x2 - x3) ** 2 + (y2 - y3) ** 2) ** 0.5
-            length = (length1 + length2) / 2  # среднее растояние между двумя соседними перегибами
-            if length > average_length * 1.4 and y2 < minimum_boundary:  # 1.4 - коофицент для растояния между соседними
-                # точками
+            length = (length1 + length2) / 2  # среднее расстояние между двумя соседними перегибами
+            if length > average_length * 1.4 and y2 < minimum_boundary:  # 1.4 - коэффициент для расстояния между
+                # соседними точками
                 r_points.append((x2, y2))  # добавляет в список
-                average_width += abs(x1 - x2) + abs(x1 - x3)  # считает среднее растояние по оси Х
+                average_width += abs(x1 - x2) + abs(x1 - x3)  # считает среднее расстояние по оси Х
         average_width = average_width / (len(r_points) * 2 + 1)  # считаем
 
         minimum_boundary = average_y - (average_y - max_y) / 5  # новый минимальный порог (меньше), чтоб ещё раз
@@ -516,22 +515,22 @@ class Graphic:
             x3, y3, id3 = self.__all_extremes[i + 1]
             if (x2, y2) in r_points:  # если эту точку уже сохранили, то продолжаем
                 continue
-            length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  # теорема пифогора
+            length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  # теорема Пифагора
             length2 = ((x2 - x3) ** 2 + (y2 - y3) ** 2) ** 0.5
-            length = (length1 + length2) / 2  # среднее растояние между двумя соседними перегибами
-            width = (abs(x1 - x2) + abs(x1 - x3)) / 2  # среднее растояние по оси Х между двумя соседями
-            # оно должно быть маньше среднего * 1.2 (левый коофицент)
+            length = (length1 + length2) / 2  # среднее расстояние между двумя соседними перегибами
+            width = (abs(x1 - x2) + abs(x1 - x3)) / 2  # среднее расстояние по оси Х между двумя соседями
+            # оно должно быть меньше среднего * 1.2 (левый коэффициент)
             if length > average_length * 1.2 and y2 < minimum_boundary and width < average_width * 1.2:  # те же самые
-                # условия, но + растояние по оси Х
+                # условия, но + расстояние по оси Х
                 r_points.append((x2, y2))  # добавляет в список
 
         # _______________________________
-        # находми группы (если такие есть) рядом стоящих получишихся точек R, и после эти группы объеденяем в одну
-        # среднию точку R
+        # находим группы (если такие есть) рядом стоящих получившихся точек R, и после эти группы объединяем в одну
+        # среднюю точку R
         # _______________________________
 
         r_points_end = []  # окончательный результат
-        average_dist = 0  # среднее растояние между всеми найдеными точками
+        average_dist = 0  # среднее расстояние между всеми найденными точками
         for i in range(1, len(r_points)):
             x1, y1 = r_points[i - 1]
             x2, y2 = r_points[i]
@@ -541,22 +540,22 @@ class Graphic:
         for point1 in r_points:  # перебираем все найденные точки R
             x1, y1 = point1
             all_x = [x1]  # иксы каждой точки из группы
-            all_y = [y1]  # игрикикаждой точки из группы
-            for point2 in r_points:  # перебираем каждую с каждой и находим их взаимное растояние друг к другу
+            all_y = [y1]  # игрики каждой точки из группы
+            for point2 in r_points:  # перебираем каждую с каждой и находим их взаимное расстояние друг к другу
                 if point1 == point2:
                     continue
                 x2, y2 = point2
-                dist = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5  # теорема пифогора
-                if dist < average_dist / 4:  # если растояние меньше 1/4 от среднего, то будем считать это группой
+                dist = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5  # теорема Пифагора
+                if dist < average_dist / 4:  # если расстояние меньше 1/4 от среднего, то будем считать это группой
                     all_x.append(x2)  # добавляем
                     all_y.append(y2)
             point_end = (sum(all_x) // len(all_x), sum(all_y) // len(all_y))  # добавляем результат группы (даже если
             # 1-а)
             if point_end not in r_points_end:
                 r_points_end.append(point_end)
-        r_points = r_points_end  # присваевыем результат к конечному списку
+        r_points = r_points_end  # присваиваем результат к конечному списку
 
-        if is_show:  # просто отображение результата (не обязательно)
+        if is_show:  # просто отображение результата (необязательно)
             img = cv.imread('result.jpeg')
             cv.line(img, (0, int(minimum_boundary)), (np.size(img, 1), int(minimum_boundary)), (255, 0, 255), 1)
             for point in r_points:
@@ -573,8 +572,8 @@ class Graphic:
 
         Суть работы
         ____________________________________________________
-        Выбирает 2 ключивые точки (Q и S) - это точки очень близкие к R (по оси Х), а так же самые низкие. Поэтому
-        решено выбирать все точки в право и влево от R на растояние 1/5 RR и найти самые низкие справа и слева.
+        Выбирает 2 ключевые точки (Q и S) - это точки очень близкие к R (по оси Х), а так же самые низкие. Поэтому
+        решено выбирать все точки в право и влево от R на расстояние 1/5 RR и найти самые низкие справа и слева.
 
         :param points_r: points_r
         :return: 2 списка с точками Q и S
@@ -583,7 +582,7 @@ class Graphic:
         points_q = []
         points_s = []
 
-        list_of_x_r = list(map(lambda x: x[0], points_r))  # определяет среднию дистанцию между R
+        list_of_x_r = list(map(lambda x: x[0], points_r))  # определяет среднюю дистанцию между R
         average_dist_x = 0
         for i in range(len(points_r) - 1):
             average_dist_x += list_of_x_r[i + 1] - list_of_x_r[i]
@@ -616,7 +615,7 @@ class Graphic:
 
         Суть работы
         ________________________
-        Работает так же как и определение точек Р, но в правую сторону: берёт все точки в диапозоне первой половины
+        Работает так же как и определение точек Р, но в правую сторону: берёт все точки в диапазоне первой половины
         между R1 - R2, и выбирает самую высокую точку
 
         :param points_r: points_r
@@ -628,11 +627,11 @@ class Graphic:
         average_dist = 0
         for i in range(len(points_r)):  # проверяет каждую точку R
             if i < len(points_r) - 1:
-                width = points_r[i + 1][0] - points_r[i][0]  # растояние по оси Х между RR
-                average_width_r += width  # среднее растояние
+                width = points_r[i + 1][0] - points_r[i][0]  # расстояние по оси Х между RR
+                average_width_r += width  # среднее расстояние
                 points = list(filter(lambda x: points_r[i][0] < x[0] < points_r[i][0] + width / 2,
                                      self.__all_extremes))
-                # это самое главное - выбирает все точки, принадлежащие диапозону
+                # это самое главное - выбирает все точки, принадлежащие диапазону
 
                 points.sort(key=lambda x: x[1])
                 try:  # TODO: обработка таких случаев
@@ -640,7 +639,7 @@ class Graphic:
                     points_t.append(points[0][:2])
                 except IndexError:
                     pass
-            else:  # работет при обработке диапозона после последней точки R.
+            else:  # работает при обработке диапазона после последней точки R.
                 # Тут-то и нужны average_dist и average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
                 average_dist = average_dist / (len(points_r) - 1)
@@ -649,7 +648,7 @@ class Graphic:
                 points.sort(key=lambda x: x[1])
                 dist = points[0][0] - points_r[i][0]
                 if average_dist * 0.75 < dist < average_dist * 1.25:
-                    points_t.append(points[0][:2])  # нужно, чтоб последняя точка не выбивалось от большенства
+                    points_t.append(points[0][:2])  # нужно, чтоб последняя точка не выбивалось от большинства
         return points_t
 
     def __get_and_find_points_p(self, points_r):
@@ -657,7 +656,7 @@ class Graphic:
 
         Суть работы
         ________________
-        Работает так же как и определение точек Т, но в левую сторону. Берёт все точки в диапозоне первой половины
+        Работает так же как и определение точек Т, но в левую сторону. Берёт все точки в диапазоне второй половины
         между R0 - R1, и выбирает самую высокую точку
 
         :param points_r: points_r
@@ -669,11 +668,11 @@ class Graphic:
         average_dist = 0
         for i in range(len(points_r) - 1, -1, -1):  # проверяет каждую точку R в обратном порядке
             if i > 0:
-                width = points_r[i][0] - points_r[i - 1][0]  # растояние по оси Х между RR
-                average_width_r += width  # среднее растояние
+                width = points_r[i][0] - points_r[i - 1][0]  # расстояние по оси Х между RR
+                average_width_r += width  # среднее расстояние
                 points = list(filter(lambda x: points_r[i][0] > x[0] > points_r[i][0] - width / 2,
                                      self.__all_extremes))
-                # это самое главное - выбирает все точки, принадлежащие диапозону
+                # это самое главное - выбирает все точки, принадлежащие диапазону
 
                 points.sort(key=lambda x: x[1])
                 try:  # TODO: обработка таких случаев
@@ -681,7 +680,7 @@ class Graphic:
                     points_p.append(points[0][:2])
                 except IndexError:
                     pass
-            else:  # работет при обработке диапозона перед первой точкой R. Тут-то и нужны average_dist и
+            else:  # работает при обработке диапазона перед первой точкой R. Тут-то и нужны average_dist и
                 # average_width_r
                 average_width_r = average_width_r / (len(points_r) - 1)
                 average_dist = average_dist / (len(points_r) - 1)
@@ -690,12 +689,12 @@ class Graphic:
                 points.sort(key=lambda x: x[1])
                 dist = points_r[i][0] - points[0][0]
                 if average_dist * 0.75 < dist < average_dist * 1.25:
-                    points_p.append(points[0][:2])  # нужно, чтоб самая первая точка не выбивалось от большенства
+                    points_p.append(points[0][:2])  # нужно, чтоб самая первая точка не выбивалось от большинства
         return points_p
 
     def __get_dictionary_of_key_points(self, is_show=False):
         """
-        Функция, которая объеденяет все операции по вычислению ключевых точек.
+        Функция, которая объединяет все операции по вычислению ключевых точек.
 
         :param is_show: is_show
         :return: словарь со всеми ключевыми точками, и даже R
@@ -714,7 +713,7 @@ class Graphic:
 
         all_extremes = list(filter(lambda x: x[2] == 1, self.__all_points))  # выделяет из все точек только экстремумы
         all_points_r = self.__get_and_find_points_r(False)  # точки R
-        all_points_r.sort(key=lambda x: x[0])  # сортировка по возврастанию Х
+        all_points_r.sort(key=lambda x: x[0])  # сортировка по возрастанию Х
         all_extremes.sort(key=lambda x: x[0])
 
         points_q, points_s = self.__get_and_find_points_q_and_s(all_points_r)  # точки Q и S
@@ -780,7 +779,7 @@ class Graphic:
 
                 # теорема косинусов для определения угла отклонения
                 angle = math.acos((length_qb ** 2 + length_tq ** 2 - length_tb ** 2) / (2 * length_qb * length_tq))
-                # небольшой коофицент погрешности для более точного определения
+                # небольшой коэффициент погрешности для более точного определения
                 angle -= ((abs(point_b[0] - point_t[0]) / (abs(point_t[0] - point_p[0]) // 10)) * 0.03)
 
                 all_points_b.append((point_b[0], point_b[1], angle))
@@ -795,10 +794,10 @@ class Graphic:
                 point_b = all_extremes[i]
                 length_tr_b = ((point_b[0] - point_after_t[0]) ** 2 + (point_b[1] - point_after_t[1]) ** 2) ** 0.5
                 length_p_b = ((point_b[0] - point_p[0]) ** 2 + (point_b[1] - point_p[1]) ** 2) ** 0.5
-                # теорема косинусов для определения угла отклонени я
+                # теорема косинусов для определения угла отклонения
                 angle = math.acos(
                     (length_tr_p ** 2 + length_tr_b ** 2 - length_p_b ** 2) / (2 * length_tr_p * length_tr_b))
-                # небольшой коофицент погрешности для более точного определения
+                # небольшой коэффициент погрешности для более точного определения
                 angle += ((abs(point_b[0] - point_t[0]) / (abs(point_t[0] - point_p[0]) // 10)) * 0.03)
                 all_points_b.append((point_b[0], point_b[1], angle))
             point_before_p = max(all_points_b, key=lambda x: x[2])[:2]
@@ -843,7 +842,7 @@ class Graphic:
                 # теорема косинусов для определения угла отклонения
                 angle = math.acos((length_bs ** 2 + length_st ** 2 - length_tb ** 2) / (2 * length_bs * length_st))
                 height = length_bs * math.sin(angle)
-                # небольшой коофицент погрешности для более точного определения
+                # небольшой коэффициент погрешности для более точного определения
                 height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
 
                 all_points_b.append((point_b[0], point_b[1], height))
@@ -863,13 +862,13 @@ class Graphic:
                 length_tb = ((point_t[0] - point_b[0]) ** 2 + (point_t[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
                 length_b_rs = ((point_rs[0] - point_b[0]) ** 2 + (
                         point_rs[1] - point_b[1]) ** 2) ** 0.5  # теорема Пифагора
-                if length_tb + length_b_rs <= length_rs_t:  # основное свойства существования треуголька
+                if length_tb + length_b_rs <= length_rs_t:  # основное свойства существования треугольника
                     continue
                 # теорема косинусов для определения угла отклонения и высоты относительно RS-T
                 angle = math.acos(
                     (length_b_rs ** 2 + length_rs_t ** 2 - length_tb ** 2) / (2 * length_b_rs * length_rs_t))
                 height = length_b_rs * math.sin(angle)
-                # небольшой коофицент погрешности для более точного определения
+                # небольшой коэффициент погрешности для более точного определения
                 height += ((abs(point_b[0] - point_s[0]) / (abs(point_t[0] - point_s[0]) // 10)) * 0.3)
 
                 all_points_b.append((point_b[0], point_b[1], height))
@@ -899,7 +898,7 @@ class Graphic:
 
     def __is_r_distance_equal(self):
         """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R, и присваивает __length_of_rs_in_mm
-        среднее RR расстояние в милиметрах
+        среднее RR расстояние в миллиметрах
 
         :return: None"""
         self.dict_of_points['R'].sort()
@@ -929,7 +928,7 @@ class Graphic:
             average_distance /= len(self.dict_of_points['R'])
 
             qua_of_squares = average_distance / self.__length_of_square  # Делим среднее
-            # расстояние между вершинами на средную длину клеточки, чтобы вычислить, сколько клеточек между R-ками
+            # расстояние между вершинами на среднюю длину клеточки, чтобы вычислить, сколько клеточек между R-ками
 
             if self.__are_squares_big:
                 self.__length_of_rs_in_mm = qua_of_squares * 5  # Если клеточки большие, то расстояние между R (в мм.)
@@ -950,8 +949,8 @@ class Graphic:
                 self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
 
     def __convert_intervals_lengths_from_pixels_to_seconds(self):
-        """Как понятно из названия, эта процедура переводит длины интервалов из пикслей в секунды и записывает их заново
-         в dict_of_intervals
+        """Как понятно из названия, эта процедура переводит длины интервалов из пикселей в секунды и записывает их
+        заново в dict_of_intervals
 
          :return: None"""
         for i in self.dict_of_intervals:
@@ -973,8 +972,8 @@ class Graphic:
                         # или 0,04 секунды
                     else:
                         self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
-                                                             * 0.02, 2)  # Размер одной одной маленькой клеточки -
-                        # 0,1 см или 0,02 секунды
+                                                             * 0.02, 2)  # Размер одной маленькой клеточки - 0,1 см
+                        # или 0,02 секунды
 
     def get_text_of_general_information(self):
         """Формирует всю известную по анализу информацию в одно строковое поле.
