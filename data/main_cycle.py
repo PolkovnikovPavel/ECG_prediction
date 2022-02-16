@@ -7,13 +7,15 @@ from graphic import Graphic
 
 class MainCycle:
     """Класс основного цикла приложения"""
-    def __init__(self, canvas, all_groups, screen_w, screen_h):
+    def __init__(self, canvas, all_groups, width, height):
         """Конструктор основного цикла программы
 
         :param canvas: холст
         :param all_groups: список объектов групп приложения (по сути - окон)
         """
         self.canvas = canvas
+        self.width = width
+        self.height = height
         self.all_groups = all_groups
         self.__timer = time.time()
         self.__running = True
@@ -47,6 +49,8 @@ class MainCycle:
         self.restart_crop = None
 
         self.dict_of_instruction_sizes = {
+            '3840x2160': [51, 13, 32],
+            '2560x1440': [45, 12, 24],
             '1920x1080': [44, 12, 18],
             '1680x1050': [41, 12, 17],
             '1600x900': [45, 12, 15],
@@ -60,6 +64,7 @@ class MainCycle:
         }
 
         self.dict_of_results_sizes = {
+            '3840x2160': [49, 12, 28],
             '1920x1080': [47, 11, 15],
             '1680x1050': [41, 11, 14],
             '1600x900': [46, 11, 12],
@@ -365,13 +370,13 @@ class MainCycle:
         bg = Object(0, 0, pw(100), ph(100), 'background_view_menu.png', self.canvas)
         self.crop_group.add_objects(bg)
 
-        upper_plate = CroppingPlate(0, ph(10), pw(100), ph(100), 'crop_up.png', self.canvas)
         lower_plate = CroppingPlate(0, ph(90), pw(100), ph(100), 'crop_down.png', self.canvas, type_of_plate='lower')
-        left_plate = CroppingPlate(pw(10), 0, pw(100), ph(100), 'crop_left.png', self.canvas, type_of_plate='left')
+        upper_plate = CroppingPlate(0, ph(10), pw(100), ph(100), 'crop_up.png', self.canvas)
         right_plate = CroppingPlate(pw(90), 0, pw(100), ph(100), 'crop_right.png', self.canvas, type_of_plate='right')
+        left_plate = CroppingPlate(pw(10), 0, pw(100), ph(100), 'crop_left.png', self.canvas, type_of_plate='left')
 
-        self.obj_crop = CropClass(self.canvas, self.file_name, [left_plate, upper_plate, right_plate, lower_plate], x=0,
-                                  y=ph(10), w=pw(100), h=ph(75))
+        self.obj_crop = CropClass(self.canvas, self.file_name, [left_plate, upper_plate, right_plate, lower_plate],
+                                  x=pw(50), y=ph(50))
         self.crop_group.add_objects(self.obj_crop)
 
         self.back_crop = Button(pw(2), ph(2), ph(8), ph(8), 'back_button_crop.png', self.canvas,

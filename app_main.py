@@ -47,7 +47,7 @@ view_group = Group()
 all_groups.append(view_group)
 crop_group = Group()
 all_groups.append(crop_group)
-main_cycle = MainCycle(canvas, all_groups, master.winfo_screenwidth(), master.winfo_screenheight())
+main_cycle = MainCycle(canvas, all_groups, screen_w, screen_h)
 
 bg = Object(0, 0, pw(100), ph(100), 'background.png', canvas)  # с этого места идёт создание необходимых объектов
 main_group.add_objects(bg)

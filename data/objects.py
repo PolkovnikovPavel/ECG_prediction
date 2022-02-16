@@ -1019,7 +1019,7 @@ class CroppingPlate(Object):
 
 class CropClass:
     """Класс изображения кадрирования"""
-    def __init__(self, canvas, path_to_file, list_of_plates, x=0, y=ph(10), w=pw(100), h=ph(75)):
+    def __init__(self, canvas, path_to_file, list_of_plates, x=0, y=ph(10)):
         """Конструктор класса изображения кадрирования
 
         :param canvas: холст
@@ -1038,8 +1038,13 @@ class CropClass:
             self.group_of_plates.add_objects(plate)
         self.x = x
         self.y = y
-        self.w = w
-        self.h = h
+        self.w = 0
+        self.h = ph(75)
+        if ':/' not in self.path_to_file:
+            self.img = Image.open(f'app_images/{self.path_to_file}')
+        else:
+            self.img = Image.open(self.path_to_file)
+        self.img_coef = 1
         self.crop_left = 0
         self.crop_upper = 0
         self.crop_right = 0
@@ -1051,7 +1056,26 @@ class CropClass:
 
         :return:
         """
-        self.object = Object(self.x, self.y, self.w, self.h, self.path_to_file, self.canvas)
+        self.w = self.img.width*self.h//self.img.height
+        if self.w > pw(100):
+            self.w = pw(100)
+            self.h = self.img.height*self.w//self.img.width
+            self.img_coef = self.w/self.img.width
+        else:
+            self.img_coef = self.h / self.img.height
+        if self.w == pw(100):
+            self.group_of_plates.all_objects[0].x = self.x - self.w // 2 + pw(2)
+            self.group_of_plates.all_objects[2].x = self.x + self.w // 2 - pw(2)
+        else:
+            self.group_of_plates.all_objects[0].x = self.x - self.w // 2
+            self.group_of_plates.all_objects[2].x = self.x + self.w // 2
+        self.group_of_plates.all_objects[0].default_x = self.group_of_plates.all_objects[0].x
+        self.group_of_plates.all_objects[2].default_x = self.group_of_plates.all_objects[2].x
+        self.group_of_plates.all_objects[1].y = self.y - self.h // 2
+        self.group_of_plates.all_objects[1].default_y = self.group_of_plates.all_objects[1].y
+        self.group_of_plates.all_objects[3].y = self.y + self.h // 2
+        self.group_of_plates.all_objects[3].default_y = self.group_of_plates.all_objects[3].y
+        self.object = Object(self.x, self.y, self.w, self.h, self.path_to_file, self.canvas, anchor='center')
 
     def crop(self):
         """Обрезает изображение
@@ -1059,10 +1083,12 @@ class CropClass:
         :return:
         """
         dict_of_cords = {}
+        dict_of_default_cords = {}
         for plate in self.group_of_plates.all_objects:
             dict_of_cords[f'{plate.type_of_plate}'] = plate.get_cords()
+            dict_of_default_cords[f'{plate.type_of_plate}'] = (plate.default_x, plate.default_y)
 
-        if dict_of_cords['left'][0] <= pw(2) or dict_of_cords['left'][0] >= pw(98):
+        if dict_of_cords['left'][0] <= dict_of_cords['left'][0] or dict_of_cords['left'][0] >= dict_of_cords['right'][0]:
             self.crop_left = 0
         else:
             self.crop_left = dict_of_cords['left'][0]
@@ -1082,7 +1108,8 @@ class CropClass:
                 and self.crop_right == self.x + self.w:
             mb.showinfo('Информация', 'Файл успешно сохранён!')
         else:
-            cropped_img = self.object.img_pil.crop([self.crop_left, self.crop_upper, self.crop_right, self.crop_lower])
+            cropped_img = ImageTk.PhotoImage(self.img).crop([self.crop_left*self.img_coef, self.crop_upper*self.img_coef,
+                                                    self.crop_right*self.img_coef, self.crop_lower*self.img_coef])
             img_new_name = re.split('.j', self.path_to_file)[0]
             img_new_name += '_обрезанный'
             img_new_name += '.j'+re.split('.j', self.path_to_file)[1]
