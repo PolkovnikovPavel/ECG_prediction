@@ -6,6 +6,7 @@ import re
 
 class Object:
     """Базовый класс графического объекта"""
+
     def __init__(self, x, y, w, h, img, canvas, visibility=True, container=[], mode_coord=False, is_enabled=True,
                  anchor='nw'):
         """Конструктор базового класса графического объекта
@@ -180,6 +181,7 @@ class Object:
 
 class Button(Object):
     """Класс объекта кнопка"""
+
     def __init__(self, x, y, w, h, img, canvas, img2=None, function=None, args=[], visibility=True, container=[]):
         """Конструктор класса кнопка
 
@@ -261,6 +263,7 @@ class Button(Object):
 
 class Text:
     """Класс текста, расположенного на холсте (не текстовое поле)"""
+
     def __init__(self, x, y, text, canvas, anchor='nw', font='Montserrat 25', visibility=True, color='black'):
         """Конструктор класса объекта текст
 
@@ -346,6 +349,7 @@ class Text:
 
 class Group:
     """Класс объекта группа"""
+
     def __init__(self):
         """Конструктор класса группа"""
         self.all_objects = []
@@ -450,6 +454,7 @@ class Group:
 
 class Point(Object):
     """Класс объекта точки на графике ЭКГ"""
+
     def __init__(self, x, y, w, h, canvas, type_point='R', point=(0, 0), visibility=True, container=[],
                  mode_coord=False, graphic=None):
         """Конструктор класса точка
@@ -533,6 +538,7 @@ class Point(Object):
 class ObjectGraphic:
     """Класс, который графически отображает ЭКГ: фотографию графика, ключевые точки и кнопки для добавления новых
     точек"""
+
     def __init__(self, canvas, graphic, path_to_file, x=0, y=0, w=1280, h=600, visibility=True, scan_graphic=None,
                  is_enabled=True):
         """Конструктор класса
@@ -797,6 +803,7 @@ class ObjectGraphic:
 
 class TextArea(Object):
     """Класс объекта текстового окна на холсте"""
+
     def __init__(self, x, y, w, h, canvas, visibility=True, anchor='nw', bg_color='white', font=('Montserrat', 25),
                  font_color='black', border_width=0, wrap_type='word'):
         """Этот класс создаёт поле с текстом
@@ -889,6 +896,7 @@ class TextArea(Object):
 
 class CroppingPlate(Object):
     """Класс панели для кадрирования изображений"""
+
     def __init__(self, x, y, w, h, img, canvas, type_of_plate='upper'):
         """Конструктор класса панели кадрирования
 
@@ -1019,6 +1027,7 @@ class CroppingPlate(Object):
 
 class CropClass:
     """Класс изображения кадрирования"""
+
     def __init__(self, canvas, path_to_file, list_of_plates, x=0, y=ph(10)):
         """Конструктор класса изображения кадрирования
 
@@ -1056,11 +1065,11 @@ class CropClass:
 
         :return:
         """
-        self.w = self.img.width*self.h//self.img.height
+        self.w = self.img.width * self.h // self.img.height
         if self.w > pw(100):
             self.w = pw(100)
-            self.h = self.img.height*self.w//self.img.width
-            self.img_coef = self.w/self.img.width
+            self.h = self.img.height * self.w // self.img.width
+            self.img_coef = self.w / self.img.width
         else:
             self.img_coef = self.h / self.img.height
         if self.w == pw(100):
@@ -1088,31 +1097,43 @@ class CropClass:
             dict_of_cords[f'{plate.type_of_plate}'] = plate.get_cords()
             dict_of_default_cords[f'{plate.type_of_plate}'] = (plate.default_x, plate.default_y)
 
-        if dict_of_cords['left'][0] <= dict_of_cords['left'][0] or dict_of_cords['left'][0] >= dict_of_cords['right'][0]:
+        if dict_of_cords['left'][0] <= dict_of_default_cords['left'][0] or dict_of_cords['left'][0] >= \
+                dict_of_default_cords['right'][0]:
             self.crop_left = 0
         else:
-            self.crop_left = dict_of_cords['left'][0]
-        if dict_of_cords['upper'][1] <= self.y or dict_of_cords['upper'][1] >= self.y + self.h:
+            if self.w == pw(100):
+                self.crop_left = (dict_of_cords['left'][0] - dict_of_default_cords['left'][0] + pw(2)) // self.img_coef
+            else:
+                self.crop_left = (dict_of_cords['left'][0] - dict_of_default_cords['left'][0]) // self.img_coef
+        if dict_of_cords['upper'][1] <= dict_of_default_cords['upper'][1] or dict_of_cords['upper'][1] >= \
+                dict_of_default_cords['lower'][1]:
             self.crop_upper = 0
         else:
-            self.crop_upper = dict_of_cords['upper'][1] - self.y
-        if dict_of_cords['right'][0] >= pw(98) or dict_of_cords['right'][0] <= pw(2):
-            self.crop_right = self.x + self.w
+            self.crop_upper = (dict_of_cords['upper'][1] - dict_of_default_cords['upper'][1]) // self.img_coef
+        if dict_of_cords['right'][0] >= dict_of_default_cords['right'][0] or dict_of_cords['right'][0] <= \
+                dict_of_default_cords['left'][0]:
+            self.crop_right = self.img.width
         else:
-            self.crop_right = dict_of_cords['right'][0]
-        if dict_of_cords['lower'][1] >= self.y + self.h or dict_of_cords['lower'][1] <= self.y:
-            self.crop_lower = self.h
+            if self.w == pw(100):
+                self.crop_right = (self.w - (
+                            dict_of_default_cords['right'][0] + pw(2) - dict_of_cords['right'][0])) // self.img_coef
+            else:
+                self.crop_right = (self.w - (
+                            dict_of_default_cords['right'][0] - dict_of_cords['right'][0])) // self.img_coef
+        if dict_of_cords['lower'][1] >= dict_of_default_cords['lower'][1] or dict_of_cords['lower'][1] <= \
+                dict_of_default_cords['upper'][1]:
+            self.crop_lower = self.img.height
         else:
-            self.crop_lower = self.h-(self.y + self.h - dict_of_cords['lower'][1])
-        if self.crop_upper == 0 and self.crop_lower == self.h and self.crop_left == 0 \
-                and self.crop_right == self.x + self.w:
-            mb.showinfo('Информация', 'Файл успешно сохранён!')
+            self.crop_lower = (self.h - (
+                        dict_of_default_cords['lower'][1] - dict_of_cords['lower'][1])) // self.img_coef
+        if self.crop_upper == 0 and self.crop_lower == self.img.height and self.crop_left == 0 \
+                and self.crop_right == self.img.width:
+            mb.showinfo('Информация', 'Вы не изменили изображение. Файл не был сохранён')
         else:
-            cropped_img = ImageTk.PhotoImage(self.img).crop([self.crop_left*self.img_coef, self.crop_upper*self.img_coef,
-                                                    self.crop_right*self.img_coef, self.crop_lower*self.img_coef])
+            cropped_img = self.img.crop((self.crop_left, self.crop_upper, self.crop_right, self.crop_lower))
             img_new_name = re.split('.j', self.path_to_file)[0]
             img_new_name += '_обрезанный'
-            img_new_name += '.j'+re.split('.j', self.path_to_file)[1]
+            img_new_name += '.j' + re.split('.j', self.path_to_file)[1]
             cropped_img.save(img_new_name)
             mb.showinfo('Информация', 'Файл успешно сохранён!')
 
