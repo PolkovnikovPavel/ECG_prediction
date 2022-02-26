@@ -333,14 +333,14 @@ class Graphic:
         list_of_squares_coord = []  # Список координат клеточек
         for i in range(0, len(contours)):
             x, y, w, h = cv.boundingRect(contours[i])
-            if w > 5 and h > 5:  # Отсеиваем маленькие контуры, убираем шум
+            if w >= 5 and h >= 5:  # Отсеиваем маленькие контуры, убираем шум
                 list_of_squares_coord.append([x, y, x + w, y + h])
 
         # Считаем, сколько пикселей занимает одна клеточка на оси Х
         list_of_squares_dis = []  # Список расстояний между точками
         flag = True
         i = 0
-        # В этом цикле считаем, сколько клеточек по x занимает одна клетка, если это
+        # В этом цикле считаем, сколько пикселей по x занимает одна клетка, если это
         # мусор, то удаляем
         while flag is True:
             if i < len(list_of_squares_coord):
@@ -501,7 +501,8 @@ class Graphic:
             length1 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  # теорема Пифагора
             length2 = ((x2 - x3) ** 2 + (y2 - y3) ** 2) ** 0.5
             length = (length1 + length2) / 2  # среднее расстояние между двумя соседними перегибами
-            if length > average_length * 1.4 and y2 < minimum_boundary:  # 1.4 - коэффициент для расстояния между
+            length_coef = 1.2  # 1.4 - коэффициент для расстояния между соседними точками
+            if length > average_length * length_coef and y2 < minimum_boundary:
                 # соседними точками
                 r_points.append((x2, y2))  # добавляет в список
                 average_width += abs(x1 - x2) + abs(x1 - x3)  # считает среднее расстояние по оси Х
@@ -535,7 +536,11 @@ class Graphic:
             x1, y1 = r_points[i - 1]
             x2, y2 = r_points[i]
             average_dist += ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5  # добавляем
-        average_dist = average_dist / (len(r_points) - 1)  # считаем
+        try:
+            average_dist = average_dist / (len(r_points) - 1)  # считаем
+        except ZeroDivisionError:
+            print('Найдена только 1 точка R, определить среднее расстояние между точками невозможно.'
+                  ' __get_and_find_points_r')
 
         for point1 in r_points:  # перебираем все найденные точки R
             x1, y1 = point1
@@ -601,12 +606,12 @@ class Graphic:
                     list_of_points_s.append(point)
                 else:
                     list_of_points_q.append(point)
-                try:  # TODO: обработка таких случаев
-                    points_s.append(max(list_of_points_s, key=lambda x: x[1]))  # берёт самую низкую точку из указанного
-                    # диапазона
-                    points_q.append(max(list_of_points_q, key=lambda x: x[1]))
-                except ValueError:
-                    pass
+            try:
+                points_s.append(max(list_of_points_s, key=lambda x: x[1]))  # берёт самую низкую точку из указанного
+                # диапазона
+                points_q.append(max(list_of_points_q, key=lambda x: x[1]))
+            except ValueError:
+                pass
 
         return points_q, points_s
 
@@ -634,7 +639,7 @@ class Graphic:
                 # это самое главное - выбирает все точки, принадлежащие диапазону
 
                 points.sort(key=lambda x: x[1])
-                try:  # TODO: обработка таких случаев
+                try:
                     average_dist += points[0][0] - points_r[i][0]  # то на сколько точка Т удалена от R
                     points_t.append(points[0][:2])
                 except IndexError:
@@ -675,7 +680,7 @@ class Graphic:
                 # это самое главное - выбирает все точки, принадлежащие диапазону
 
                 points.sort(key=lambda x: x[1])
-                try:  # TODO: обработка таких случаев
+                try:
                     average_dist += points_r[i][0] - points[0][0]  # то на сколько точка Р удалена от R
                     points_p.append(points[0][:2])
                 except IndexError:
@@ -712,14 +717,21 @@ class Graphic:
             self.graph_detection()
 
         all_extremes = list(filter(lambda x: x[2] == 1, self.__all_points))  # выделяет из все точек только экстремумы
-        all_points_r = self.__get_and_find_points_r(False)  # точки R
+        all_points_r = self.__get_and_find_points_r()  # точки R
         all_points_r.sort(key=lambda x: x[0])  # сортировка по возрастанию Х
         all_extremes.sort(key=lambda x: x[0])
 
-        points_q, points_s = self.__get_and_find_points_q_and_s(all_points_r)  # точки Q и S
-        points_t = self.__get_and_find_points_t(all_points_r)  # точки T
-        points_p = self.__get_and_find_points_p(all_points_r)  # точки P
-        points_p.sort(key=lambda x: x[0])
+        points_s = []
+        points_q = []
+        points_t = []
+        points_p = []
+        if len(all_points_r) < 2:
+            print('Найдено меньше 2 точек R. Определить точки Q, S, R и P невозможно.')
+        else:
+            points_q, points_s = self.__get_and_find_points_q_and_s(all_points_r)  # точки Q и S
+            points_t = self.__get_and_find_points_t(all_points_r)  # точки T
+            points_p = self.__get_and_find_points_p(all_points_r)  # точки P
+            points_p.sort(key=lambda x: x[0])
 
         key_points['R'] = all_points_r
         key_points['Q'] = points_q

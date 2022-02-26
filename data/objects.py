@@ -1136,6 +1136,7 @@ class CropClass:
             img_new_name += '.j' + re.split('.j', self.path_to_file)[1]
             cropped_img.save(img_new_name)
             mb.showinfo('Информация', 'Файл успешно сохранён!')
+            return img_new_name
 
     def show(self):
         """Показывает объект

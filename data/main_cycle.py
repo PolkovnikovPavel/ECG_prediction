@@ -401,7 +401,7 @@ class MainCycle:
 
         :return:
         """
-        self.obj_crop.crop()
+        self.file_name = self.obj_crop.crop()
 
     def set_plates_default(self, *args):
         """Возвращает панели кадрирования на исходное положение

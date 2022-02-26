@@ -2,12 +2,6 @@ import cv2 as cv
 import pyglet
 from data.main_cycle import *
 from data.objects import *
-# имеет смысл только при полном экране (оно меняет временно разрешение экрана)
-# print(ScreenRes.get_modes())
-# x = ScreenRes.get_modes()
-# ScreenRes.set(1280, 720)
-# ScreenRes.set()  # Set defaults
-
 
 # ▼ инициализация ▼
 master = tkinter.Tk()
@@ -92,4 +86,3 @@ master.bind('<MouseWheel>', main_cycle.mouse_wheel)
 master.bind('<Key>', main_cycle.pressing_keyboard)
 
 main_cycle.start()
-ScreenRes.set()  # Set defaults разрешение экрана
