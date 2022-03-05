@@ -22,12 +22,12 @@ class Graphic:
         :param speed: Скорость записи ЭКГ. Обычно 25 или 50 мм/с
         """
         # Параметры изображения
-        self.dict_of_points = {}
+        self.__dict_of_points = {}
         self.__reserve_dict_of_points = {}
-        self.dict_of_intervals = {}
-        self.speed_of_ecg = speed
+        self.__dict_of_intervals = {}
+        self.__speed_of_ecg = speed
 
-        self.image_full_name = image_full_name
+        self.__image_full_name = image_full_name
 
         self.__is_equal = False
         self.__length_of_square = 0
@@ -36,150 +36,120 @@ class Graphic:
         self.__img_otsus_method = None
         self.__are_squares_big = False
         self.__length_of_rs_in_mm = 0
-        self.heart_rate = 0
-        self.prediction = ''
+        self.__heart_rate = 0
+        self.__prediction = ''
 
-    def get_img(self, flag=cv.IMREAD_UNCHANGED, any_path=None):
-        if any_path is None:
-            return cv.imdecode(np.fromfile(self.image_full_name, dtype=np.uint8), flag)  # Чтение изображения
-        else:
-            return cv.imdecode(np.fromfile(any_path, dtype=np.uint8), flag)  # Чтение изображения
+    # Геттеры и сеттеры для класса
+    @property
+    def dict_of_points(self):
+        return self.__dict_of_points
+
+    @dict_of_points.setter
+    def dict_of_points(self, value):
+        self.__dict_of_points = value
+
+    @property
+    def speed_of_ecg(self):
+        return self.__speed_of_ecg
+
+    @speed_of_ecg.setter
+    def speed_of_ecg(self, value):
+        self.__speed_of_ecg = value
+
+    @property
+    def heart_rate(self):
+        return self.__heart_rate
+
+    @heart_rate.setter
+    def heart_rate(self, value):
+        self.__heart_rate = value
 
     def graph_detection(self):
         """Main-функция.
 
         Запускаешь её и автоматически определяются все необходимые величины.
         """
-        self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method(False)))
+        self.__find_extremes_and_points(self.__get_digitization_image(self.__otsus_method()))
         self.__get_dictionary_of_key_points()
         self.__set_points_for_intervals()
         self.__find_square_length()
+        self.__is_r_distance_equal()
+        self.find_intervals()
+
+    def restart_graphic(self):
+        """Перезагружает весь график, то есть стирает все изменения
+
+        :return: None"""
+        self.__dict_of_points = copy.deepcopy(self.__reserve_dict_of_points)
+        self.find_intervals()
+
+    def find_intervals(self):
+        """Процедура, объединяющая все действия по нахождению интервалов
+
+        :return: None"""
         self.__get_intervals()
         self.__convert_intervals_lengths_from_pixels_to_seconds()
-        self.__is_r_distance_equal()
         self.find_heart_rate()
 
-    def __get_intervals(self):
-        """Ищет все интервалы"""
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-
-        list_of_intervals = []
-        dict_of_points['LP'].sort()
-        dict_of_points['RT'].sort()
-        if len(dict_of_points['LP']) == 0 or len(dict_of_points['RT']) == 0:  # Здесь и далее - проверки на то, что
-            # такие интервалы вообще существуют (хватает ли точек для определения интервалов)
-            list_of_intervals = [0]
+    def find_heart_rate(self):
+        """Ищет ЧСС"""
+        self.__is_r_distance_equal()
+        if self.__length_of_rs_in_mm == 0:
+            self.__heart_rate = 0
         else:
-            for i in range(len(dict_of_points['RT'])):
-                if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
-                    if dict_of_points['LP'][0][0] < dict_of_points['RT'][0][0]:
-                        del dict_of_points['LP'][0]
-                    try:
-                        list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
-                    except BaseException:
-                        print('Нарушен порядок точек ЛП и РТ.')
-                        list_of_intervals = [0]
-                        break
-                    else:
-                        del dict_of_points['LP'][0]
-                        del dict_of_points['RT'][0]
-        self.dict_of_intervals['TP'] = list_of_intervals
+            if self.__speed_of_ecg == 25:
+                self.__heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.04), 2)
+            else:
+                self.__heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
 
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-        list_of_intervals = []
-        dict_of_points['R'].sort()
-        if len(dict_of_points['R']) < 2:
-            list_of_intervals = [0]
-        else:
-            for i in range(len(dict_of_points['R']) - 1):
-                if len(dict_of_points['R']) > 1:
-                    list_of_intervals.append(abs(dict_of_points['R'][0][0] - dict_of_points['R'][1][0]))
-                    del dict_of_points['R'][0]
-        self.dict_of_intervals['RR'] = list_of_intervals
+    def get_size_one_pixel(self):
+        """Ищет время одного пикселя в секундах
 
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-        list_of_intervals = []
-        dict_of_points['LP'].sort()
-        if len(dict_of_points['LP']) < 2:
-            list_of_intervals = [0]
-        else:
-            for i in range(len(dict_of_points['LP']) - 1):
-                if len(dict_of_points['LP']) > 1:
-                    list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['LP'][1][0]))
-                    del dict_of_points['LP'][0]
-        self.dict_of_intervals['PP'] = list_of_intervals
+        :return: Время одного пикселя"""
+        average_w = 0
+        if len(self.__dict_of_points['R']) < 2:
+            return 1
+        for i in range(1, len(self.__dict_of_points['R'])):
+            point1 = self.__dict_of_points['R'][i - 1]
+            point2 = self.__dict_of_points['R'][i]
+            average_w += abs(point1[0] - point2[0])
+        average_w = average_w / (len(self.__dict_of_points['R']) - 1)
+        interval_rr = sum(self.__dict_of_intervals['RR']) / len(self.__dict_of_intervals['RR'])
+        return interval_rr / average_w
 
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-        list_of_intervals = []
-        dict_of_points['LP'].sort()
-        dict_of_points['Q'].sort()
-        if len(dict_of_points['LP']) == 0 or len(dict_of_points['Q']) == 0:
-            list_of_intervals = [0]
-        else:
-            for i in range(len(dict_of_points['LP'])):
-                if len(dict_of_points['Q']) > 0 and len(dict_of_points['LP']) > 0:
-                    if len(dict_of_points['Q']) > 1:
-                        if abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][1][0]) < \
-                                abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][0][0]):
-                            del dict_of_points['Q'][0]
-                    list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][0][0]))
-                    del dict_of_points['LP'][0]
-                    del dict_of_points['Q'][0]
-        self.dict_of_intervals['PQ'] = list_of_intervals
+    def get_text_of_general_information(self):
+        """Формирует всю известную по анализу информацию в одно строковое поле.
 
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-        list_of_intervals = []
-        dict_of_points['RT'].sort()
-        dict_of_points['Q'].sort()
-        if len(dict_of_points['Q']) == 0 or len(dict_of_points['RT']) == 0:
-            list_of_intervals = [0]
-        else:
-            for i in range(len(dict_of_points['Q'])):
-                if len(dict_of_points['RT']) > 0 and len(dict_of_points['Q']) > 0:
-                    if len(dict_of_points['RT']) > 1:
-                        if abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][1][0]) < \
-                                abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][0][0]):
-                            del dict_of_points['RT'][0]
-                    list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][0][0]))
-                    del dict_of_points['Q'][0]
-                    del dict_of_points['RT'][0]
-        self.dict_of_intervals['QT'] = list_of_intervals
+        :return: None"""
+        self.__prediction = 'Средние значения интервалов:\n'
+        for i in self.__dict_of_intervals:
+            average_interval = 0
+            for j in range(len(self.__dict_of_intervals[i])):
+                average_interval += self.__dict_of_intervals[i][j]
 
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-        list_of_intervals = []
-        dict_of_points['RS'].sort()
-        dict_of_points['Q'].sort()
-        if len(dict_of_points['Q']) == 0 or len(dict_of_points['RS']) == 0:
-            list_of_intervals = [0]
+            if len(self.__dict_of_intervals[i]) > 2:
+                average_interval = average_interval / (len(self.__dict_of_intervals[i]))
+            elif len(self.__dict_of_intervals[i]) == 2:
+                average_interval = average_interval / 2
+            else:
+                average_interval = average_interval
+            if average_interval == 0:
+                self.__prediction += f'{i} - Недостаточно точек для определения.\n'
+            else:
+                self.__prediction += f'{i} - {round(average_interval, 2)} сек.\n'
+        self.__prediction += f"ЧСС:\n{self.__heart_rate} уд/мин.\nПервичное заключение:\n"
+        if self.__length_of_rs_in_mm == 0:
+            self.__prediction += 'Недостаточно данных для заключения.'
         else:
-            for i in range(len(dict_of_points['Q'])):
-                if len(dict_of_points['RS']) > 0 and len(dict_of_points['Q']) > 0:
-                    if len(dict_of_points['RS']) > 1:
-                        if abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][1][0]) < \
-                                abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][0][0]):
-                            del dict_of_points['RS'][0]
-                    list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][0][0]))
-                    del dict_of_points['Q'][0]
-                    del dict_of_points['RS'][0]
-        self.dict_of_intervals['QRS'] = list_of_intervals
-
-        dict_of_points = copy.deepcopy(self.dict_of_points)
-        list_of_intervals = []
-        dict_of_points['R'].sort()
-        dict_of_points['Q'].sort()
-        if len(dict_of_points['Q']) == 0 or len(dict_of_points['R']) == 0:
-            list_of_intervals = [0]
-        else:
-            for i in range(len(dict_of_points['Q'])):
-                if len(dict_of_points['R']) > 0 and len(dict_of_points['Q']) > 0:
-                    if len(dict_of_points['R']) > 1:
-                        if abs(dict_of_points['Q'][0][0] - dict_of_points['R'][1][0]) < \
-                                abs(dict_of_points['Q'][0][0] - dict_of_points['R'][0][0]):
-                            del dict_of_points['R'][0]
-                    list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['R'][0][0]))
-                    del dict_of_points['Q'][0]
-                    del dict_of_points['R'][0]
-        self.dict_of_intervals['QR'] = list_of_intervals
+            if self.__is_equal:
+                self.__prediction += 'Сердце бьётся ритмично. '
+            else:
+                self.__prediction += 'Сердце бьётся не ритмично. '
+            if self.__heart_rate > 90:
+                self.__prediction += 'Наблюдается синусовая тахикардия.'
+            elif self.__heart_rate < 50:
+                self.__prediction += 'Наблюдается синусовая брадикардия.'
+        return self.__prediction
 
     def show_result(self, path_to_save='result.jpg'):
         """Только отображает
@@ -201,12 +171,12 @@ class Graphic:
             elif point[2] == 2:
                 cv.circle(img, point[:2], 1, (50, 50, 200), -1)
             last_point = point
-        for type in self.dict_of_points:
+        for type in self.__dict_of_points:
             if type in colors:
                 color = colors[type]
             else:
                 color = (255, 255, 255)
-            for point in self.dict_of_points[type]:
+            for point in self.__dict_of_points[type]:
                 cv.circle(img, point[:2], 4, color, -1)
         cv.imwrite(path_to_save, img)
         cv.imshow("Image", img)
@@ -235,14 +205,142 @@ class Graphic:
                 cv.circle(img, point[:2], 1, (50, 50, 200), -1)
             last_point = point
         if is_key_points:
-            for type in self.dict_of_points:
+            for type in self.__dict_of_points:
                 if type in colors:
                     color = colors[type]
                 else:
                     color = (255, 255, 255)
-                for point in self.dict_of_points[type]:
+                for point in self.__dict_of_points[type]:
                     cv.circle(img, point[:2], 4, color, -1)
         cv.imwrite(path, img)
+
+    def __get_img(self, flag=cv.IMREAD_UNCHANGED, any_path=None):
+        if any_path is None:
+            return cv.imdecode(np.fromfile(self.__image_full_name, dtype=np.uint8), flag)  # Чтение изображения
+        else:
+            return cv.imdecode(np.fromfile(any_path, dtype=np.uint8), flag)  # Чтение изображения
+
+    def __get_intervals(self):
+        """Ищет все интервалы"""
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+
+        list_of_intervals = []
+        dict_of_points['LP'].sort()
+        dict_of_points['RT'].sort()
+        if len(dict_of_points['LP']) == 0 or len(dict_of_points['RT']) == 0:  # Здесь и далее - проверки на то, что
+            # такие интервалы вообще существуют (хватает ли точек для определения интервалов)
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['RT'])):
+                if len(dict_of_points['LP']) > 0 and len(dict_of_points['RT']) > 0:
+                    if dict_of_points['LP'][0][0] < dict_of_points['RT'][0][0]:
+                        del dict_of_points['LP'][0]
+                    try:
+                        list_of_intervals.append(abs(dict_of_points['RT'][0][0] - dict_of_points['LP'][0][0]))
+                    except BaseException:
+                        print('Нарушен порядок точек ЛП и РТ.')
+                        list_of_intervals = [0]
+                        break
+                    else:
+                        del dict_of_points['LP'][0]
+                        del dict_of_points['RT'][0]
+        self.__dict_of_intervals['TP'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+        list_of_intervals = []
+        dict_of_points['R'].sort()
+        if len(dict_of_points['R']) < 2:
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['R']) - 1):
+                if len(dict_of_points['R']) > 1:
+                    list_of_intervals.append(abs(dict_of_points['R'][0][0] - dict_of_points['R'][1][0]))
+                    del dict_of_points['R'][0]
+        self.__dict_of_intervals['RR'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+        list_of_intervals = []
+        dict_of_points['LP'].sort()
+        if len(dict_of_points['LP']) < 2:
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['LP']) - 1):
+                if len(dict_of_points['LP']) > 1:
+                    list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['LP'][1][0]))
+                    del dict_of_points['LP'][0]
+        self.__dict_of_intervals['PP'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+        list_of_intervals = []
+        dict_of_points['LP'].sort()
+        dict_of_points['Q'].sort()
+        if len(dict_of_points['LP']) == 0 or len(dict_of_points['Q']) == 0:
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['LP'])):
+                if len(dict_of_points['Q']) > 0 and len(dict_of_points['LP']) > 0:
+                    if len(dict_of_points['Q']) > 1:
+                        if abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][1][0]) < \
+                                abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][0][0]):
+                            del dict_of_points['Q'][0]
+                    list_of_intervals.append(abs(dict_of_points['LP'][0][0] - dict_of_points['Q'][0][0]))
+                    del dict_of_points['LP'][0]
+                    del dict_of_points['Q'][0]
+        self.__dict_of_intervals['PQ'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+        list_of_intervals = []
+        dict_of_points['RT'].sort()
+        dict_of_points['Q'].sort()
+        if len(dict_of_points['Q']) == 0 or len(dict_of_points['RT']) == 0:
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['Q'])):
+                if len(dict_of_points['RT']) > 0 and len(dict_of_points['Q']) > 0:
+                    if len(dict_of_points['RT']) > 1:
+                        if abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][1][0]) < \
+                                abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][0][0]):
+                            del dict_of_points['RT'][0]
+                    list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['RT'][0][0]))
+                    del dict_of_points['Q'][0]
+                    del dict_of_points['RT'][0]
+        self.__dict_of_intervals['QT'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+        list_of_intervals = []
+        dict_of_points['RS'].sort()
+        dict_of_points['Q'].sort()
+        if len(dict_of_points['Q']) == 0 or len(dict_of_points['RS']) == 0:
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['Q'])):
+                if len(dict_of_points['RS']) > 0 and len(dict_of_points['Q']) > 0:
+                    if len(dict_of_points['RS']) > 1:
+                        if abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][1][0]) < \
+                                abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][0][0]):
+                            del dict_of_points['RS'][0]
+                    list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['RS'][0][0]))
+                    del dict_of_points['Q'][0]
+                    del dict_of_points['RS'][0]
+        self.__dict_of_intervals['QRS'] = list_of_intervals
+
+        dict_of_points = copy.deepcopy(self.__dict_of_points)
+        list_of_intervals = []
+        dict_of_points['R'].sort()
+        dict_of_points['Q'].sort()
+        if len(dict_of_points['Q']) == 0 or len(dict_of_points['R']) == 0:
+            list_of_intervals = [0]
+        else:
+            for i in range(len(dict_of_points['Q'])):
+                if len(dict_of_points['R']) > 0 and len(dict_of_points['Q']) > 0:
+                    if len(dict_of_points['R']) > 1:
+                        if abs(dict_of_points['Q'][0][0] - dict_of_points['R'][1][0]) < \
+                                abs(dict_of_points['Q'][0][0] - dict_of_points['R'][0][0]):
+                            del dict_of_points['R'][0]
+                    list_of_intervals.append(abs(dict_of_points['Q'][0][0] - dict_of_points['R'][0][0]))
+                    del dict_of_points['Q'][0]
+                    del dict_of_points['R'][0]
+        self.__dict_of_intervals['QR'] = list_of_intervals
 
     def __otsus_method(self, is_show=False, path_to_file=None):
         """Удаление фона
@@ -253,7 +351,7 @@ class Graphic:
         :return: ч/б изображение без заднего фона (только график ЭКГ)
         """
         if path_to_file is None:
-            img = self.get_img()  # Чтение изображения
+            img = self.__get_img()  # Чтение изображения
         else:
             img = cv.imread(path_to_file)
         if is_show:
@@ -283,7 +381,7 @@ class Graphic:
         :param is_show: is_show
         """
         # Исходное изображение
-        img = self.get_img(cv.IMREAD_GRAYSCALE)
+        img = self.__get_img(cv.IMREAD_GRAYSCALE)
         if is_show:
             cv.imshow("Original", img)
             cv.waitKey(0)
@@ -305,7 +403,7 @@ class Graphic:
             cv.imshow('result', blur_img)
             cv.waitKey(0)
 
-        destination = '/'.join(self.image_full_name.split('/')[:-1])
+        destination = '/'.join(self.__image_full_name.split('/')[:-1])
         gel = 'temp_w-o_graphic.jpeg'
         script_path = os.getcwd()
         os.chdir(destination)
@@ -369,23 +467,6 @@ class Graphic:
             self.__are_squares_big = False
         else:
             self.__are_squares_big = True
-
-    def crop_image(self, n, is_show=False):
-        """Обрезает изображение сверху и снизу на n пикселей
-
-        :param n: число пикселей, на которое изображение обрежется
-        :param is_show: is_show
-        :return: обрезанное изображение
-        """
-        img = cv.imread(self.image_full_name)
-        y0 = n
-        y1 = img.shape[0] - n
-        crop_img = img[y0:y1]
-        if is_show:
-            cv.imshow('cropped', crop_img)
-            cv.waitKey(0)
-
-        return crop_img
 
     @staticmethod
     def __get_digitization_image(img):
@@ -749,7 +830,7 @@ class Graphic:
             cv.imshow("Image", img)
             cv.waitKey(0)
 
-        self.dict_of_points = key_points
+        self.__dict_of_points = key_points
 
         return key_points
 
@@ -762,15 +843,15 @@ class Graphic:
         img = cv.imread(f'result.jpg')
         all_points_rt = []  # правее R
         all_points_lp = []  # левее P
-        for point_t in self.dict_of_points['T']:
-            point_p = self.dict_of_points['P'][-1]  # определение ближайших точек P и Q
-            for point in self.dict_of_points['P']:
+        for point_t in self.__dict_of_points['T']:
+            point_p = self.__dict_of_points['P'][-1]  # определение ближайших точек P и Q
+            for point in self.__dict_of_points['P']:
                 if point[0] < point_t[0]:
                     continue
                 if point[0] < point_p[0]:
                     point_p = point
-            point_q = self.dict_of_points['Q'][-1]
-            for point in self.dict_of_points['Q']:
+            point_q = self.__dict_of_points['Q'][-1]
+            for point in self.__dict_of_points['Q']:
                 if point[0] < point_t[0]:
                     continue
                 if point[0] < point_q[0]:
@@ -818,8 +899,8 @@ class Graphic:
             cv.circle(img, point_after_t[:2], 4, (255, 255, 255), -1)
             cv.circle(img, point_before_p[:2], 4, (255, 255, 255), -1)
 
-        self.dict_of_points['RT'] = all_points_rt
-        self.dict_of_points['LP'] = all_points_lp
+        self.__dict_of_points['RT'] = all_points_rt
+        self.__dict_of_points['LP'] = all_points_lp
         return True
 
     def __defining_intervals_s_t(self):
@@ -831,9 +912,9 @@ class Graphic:
         img = cv.imread(f'result.jpg')
         all_points_lt = []  # левее Т
         all_points_rs = []  # правее S
-        for point_s in self.dict_of_points['S']:
-            point_t = self.dict_of_points['T'][-1]
-            for point in self.dict_of_points['T']:
+        for point_s in self.__dict_of_points['S']:
+            point_t = self.__dict_of_points['T'][-1]
+            for point in self.__dict_of_points['T']:
                 if point[0] < point_s[0]:
                     continue
                 if point[0] < point_t[0]:
@@ -892,8 +973,8 @@ class Graphic:
             cv.circle(img, point_rs[:2], 4, (255, 255, 255), -1)
             cv.circle(img, point_lt[:2], 4, (255, 255, 255), -1)
 
-        self.dict_of_points['LT'] = all_points_lt
-        self.dict_of_points['RS'] = all_points_rs
+        self.__dict_of_points['LT'] = all_points_lt
+        self.__dict_of_points['RS'] = all_points_rs
         return True
 
     def __set_points_for_intervals(self):
@@ -906,17 +987,17 @@ class Graphic:
 
         self.__defining_intervals_t_p()
         self.__defining_intervals_s_t()
-        self.__reserve_dict_of_points = copy.deepcopy(self.dict_of_points)
+        self.__reserve_dict_of_points = copy.deepcopy(self.__dict_of_points)
 
     def __is_r_distance_equal(self):
         """ Функция, которая проверяет, одинаковые ли расстояния между вершинами R, и присваивает __length_of_rs_in_mm
         среднее RR расстояние в миллиметрах
 
         :return: None"""
-        self.dict_of_points['R'].sort()
+        self.__dict_of_points['R'].sort()
         self.__is_equal = True
         try:
-            average_distance = self.dict_of_points['R'][1][0] - self.dict_of_points['R'][0][0]
+            average_distance = self.__dict_of_points['R'][1][0] - self.__dict_of_points['R'][0][0]
         except IndexError:
             print('Недостаточно точек R для определения результата. Функция is_r_distance_equal.')
             self.__length_of_rs_in_mm = 0
@@ -924,20 +1005,20 @@ class Graphic:
         else:
             interval = average_distance
             # В этом цикле за 1 проход вычисляются интервалы и определяется, равные ли расстояния между ними
-            for i in range(1, len(self.dict_of_points['R']) - 1):
-                if not (((self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) -
-                         (self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) * 0.1) <= interval <=
-                        ((self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) +
-                         (self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]) * 0.1)):
+            for i in range(1, len(self.__dict_of_points['R']) - 1):
+                if not (((self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0]) -
+                         (self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0]) * 0.1) <= interval <=
+                        ((self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0]) +
+                         (self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0]) * 0.1)):
                     self.__is_equal = False
-                interval = self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]
-                average_distance += self.dict_of_points['R'][i + 1][0] - self.dict_of_points['R'][i][0]
+                interval = self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0]
+                average_distance += self.__dict_of_points['R'][i + 1][0] - self.__dict_of_points['R'][i][0]
 
-            if len(self.dict_of_points['R']) == 2:  # Т.е. если у нас всего 2 вершины R
+            if len(self.__dict_of_points['R']) == 2:  # Т.е. если у нас всего 2 вершины R
                 self.__is_equal = True
 
             # Считаем среднее расстояние между вершинами R
-            average_distance /= len(self.dict_of_points['R'])
+            average_distance /= len(self.__dict_of_points['R'])
 
             qua_of_squares = average_distance / self.__length_of_square  # Делим среднее
             # расстояние между вершинами на среднюю длину клеточки, чтобы вычислить, сколько клеточек между R-ками
@@ -949,104 +1030,29 @@ class Graphic:
                 self.__length_of_rs_in_mm = qua_of_squares  # Если клеточки маленькие, то расстояние равно количеству
                 # маленьких клеток, ведь клетки длиной по 1 мм
 
-    def find_heart_rate(self):
-        """Ищет ЧСС"""
-        self.__is_r_distance_equal()
-        if self.__length_of_rs_in_mm == 0:
-            self.heart_rate = 0
-        else:
-            if self.speed_of_ecg == 25:
-                self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.04), 2)
-            else:
-                self.heart_rate = round(60 / (self.__length_of_rs_in_mm * 0.02), 2)
-
     def __convert_intervals_lengths_from_pixels_to_seconds(self):
         """Как понятно из названия, эта процедура переводит длины интервалов из пикселей в секунды и записывает их
         заново в dict_of_intervals
 
          :return: None"""
-        for i in self.dict_of_intervals:
-            for j in range(len(self.dict_of_intervals[i])):
+        for i in self.__dict_of_intervals:
+            for j in range(len(self.__dict_of_intervals[i])):
                 if self.__are_squares_big:
-                    if self.speed_of_ecg == 25:
+                    if self.__speed_of_ecg == 25:
                         # интервал_в_секундах = интервал_в_пикселях/длина_клеточки_в_пикселях*время_клеточки
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
-                                                             * 0.2, 2)  # Размер одной большой клеточки - 0.5 см или
+                        self.__dict_of_intervals[i][j] = round(self.__dict_of_intervals[i][j] / self.__length_of_square
+                                                               * 0.2, 2)  # Размер одной большой клеточки - 0.5 см или
                         # 0,2 секунды
                     else:
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
-                                                             * 0.1, 2)  # Размер одной большой клеточки - 0.5 см
+                        self.__dict_of_intervals[i][j] = round(self.__dict_of_intervals[i][j] / self.__length_of_square
+                                                               * 0.1, 2)  # Размер одной большой клеточки - 0.5 см
                         # или 0,1 секунды
                 else:
-                    if self.speed_of_ecg == 25:
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
-                                                             * 0.04, 2)  # Размер одной маленькой клеточки - 0,1 см
+                    if self.__speed_of_ecg == 25:
+                        self.__dict_of_intervals[i][j] = round(self.__dict_of_intervals[i][j] / self.__length_of_square
+                                                               * 0.04, 2)  # Размер одной маленькой клеточки - 0,1 см
                         # или 0,04 секунды
                     else:
-                        self.dict_of_intervals[i][j] = round(self.dict_of_intervals[i][j] / self.__length_of_square
-                                                             * 0.02, 2)  # Размер одной маленькой клеточки - 0,1 см
+                        self.__dict_of_intervals[i][j] = round(self.__dict_of_intervals[i][j] / self.__length_of_square
+                                                               * 0.02, 2)  # Размер одной маленькой клеточки - 0,1 см
                         # или 0,02 секунды
-
-    def get_text_of_general_information(self):
-        """Формирует всю известную по анализу информацию в одно строковое поле.
-
-        :return: None"""
-        self.prediction = 'Средние значения интервалов:\n'
-        for i in self.dict_of_intervals:
-            average_interval = 0
-            for j in range(len(self.dict_of_intervals[i])):
-                average_interval += self.dict_of_intervals[i][j]
-
-            if len(self.dict_of_intervals[i]) > 2:
-                average_interval = average_interval / (len(self.dict_of_intervals[i]))
-            elif len(self.dict_of_intervals[i]) == 2:
-                average_interval = average_interval / 2
-            else:
-                average_interval = average_interval
-            if average_interval == 0:
-                self.prediction += f'{i} - Недостаточно точек для определения.\n'
-            else:
-                self.prediction += f'{i} - {round(average_interval, 2)} сек.\n'
-        self.prediction += f"ЧСС:\n{self.heart_rate} уд/мин.\nПервичное заключение:\n"
-        if self.__length_of_rs_in_mm == 0:
-            self.prediction += 'Недостаточно данных для заключения.'
-        else:
-            if self.__is_equal:
-                self.prediction += 'Сердце бьётся ритмично. '
-            else:
-                self.prediction += 'Сердце бьётся не ритмично. '
-            if self.heart_rate > 90:
-                self.prediction += 'Наблюдается синусовая тахикардия.'
-            elif self.heart_rate < 50:
-                self.prediction += 'Наблюдается синусовая брадикардия.'
-        return self.prediction
-
-    def get_size_one_pixel(self):
-        """Ищет время одного пикселя в секундах
-
-        :return: Время одного пикселя"""
-        average_w = 0
-        if len(self.dict_of_points['R']) < 2:
-            return 1
-        for i in range(1, len(self.dict_of_points['R'])):
-            point1 = self.dict_of_points['R'][i - 1]
-            point2 = self.dict_of_points['R'][i]
-            average_w += abs(point1[0] - point2[0])
-        average_w = average_w / (len(self.dict_of_points['R']) - 1)
-        interval_rr = sum(self.dict_of_intervals['RR']) / len(self.dict_of_intervals['RR'])
-        return interval_rr / average_w
-
-    def restart_graphic(self):
-        """Перезагружает весь график, то есть стирает все изменения
-
-        :return: None"""
-        self.dict_of_points = copy.deepcopy(self.__reserve_dict_of_points)
-        self.find_intervals()
-
-    def find_intervals(self):
-        """Процедура, объединяющая все действия по нахождению интервалов
-
-        :return: None"""
-        self.__get_intervals()
-        self.__convert_intervals_lengths_from_pixels_to_seconds()
-        self.find_heart_rate()
